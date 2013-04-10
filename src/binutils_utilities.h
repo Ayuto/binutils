@@ -18,9 +18,9 @@
 **/
 
 /*
- * $Rev: 51 $
- * $Author: Ayuto $
- * $Date: 2013-02-08 18:34:40 +0100 (Fr, 08. Feb 2013) $
+ * $Rev$
+ * $Author$
+ * $Date$
 */
 
 #ifndef BINUTILS_UTILITIES_H
