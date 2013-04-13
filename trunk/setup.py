@@ -93,18 +93,18 @@ def updateCppVersion():
     for filename in os.listdir('src'):
         if not os.path.isfile('src/' + filename):
             continue
-            
+
         with open('src/' + filename) as f:
             data = f.read()
-            
+
         max_revs += map(int, RE_REVISION.findall(data))
-        
-    rev = str(max(max_revs))
+
+    rev = max(max_revs)
     with open('src/binutils_version.h', 'r') as f:
         data = f.read()
-        
+
     with open('src/binutils_version.h', 'w') as f:
-        f.write(RE_REVISION.sub(rev, data))
+        f.write(RE_REVISION.sub('$Rev: %s $'% rev, data))
 
 
 # =============================================================================
