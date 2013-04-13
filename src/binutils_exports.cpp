@@ -43,6 +43,7 @@
 #include "binutils_scanner.h"
 #include "binutils_hooks.h"
 #include "binutils_utilities.h"
+#include "binutils_version.h"
 
 
 // ============================================================================
@@ -96,7 +97,12 @@ public:
 // ============================================================================
 PyMODINIT_FUNC init_binutils()
 {
-    Py_InitModule("_binutils", g_PyFuncs);
+    PyObject* _binutils = Py_InitModule("_binutils", g_PyFuncs);
+    
+    // Set a global variable to the latest revision
+    PyObject* version = PyString_FromString(REVISION);
+    PyObject_SetAttrString(_binutils, "cpp_version", version);
+    Py_XDECREF(version);
 }
 
 
