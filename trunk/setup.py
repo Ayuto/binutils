@@ -100,10 +100,11 @@ def updateCppVersion():
         max_revs += map(int, RE_REVISION.findall(data))
         
     rev = str(max(max_revs))
-    with open('src/binutils_version.h', 'r+') as f:
-        data = RE_REVISION.sub(rev, f.read())
-        print data
-        f.write(data)
+    with open('src/binutils_version.h', 'r') as f:
+        data = f.read()
+        
+    with open('src/binutils_version.h', 'w') as f:
+        f.write(RE_REVISION.sub(rev, data))
 
 
 # =============================================================================
