@@ -2,7 +2,10 @@
 # >> IMPORTS
 # =============================================================================
 # Python
+from __future__ import with_statement
+
 import os
+import re
 
 from distutils.core import Extension
 from distutils.core import setup
@@ -77,8 +80,37 @@ LINKER_FLAGS = [
 
 
 # =============================================================================
+# >> GLOBAL VARIABLES
+# =============================================================================
+RE_REVISION = re.compile(r'\$Rev: (\d+) \$')
+
+
+# =============================================================================
+# >> FUNCTIONS
+# =============================================================================
+def updateCppVersion():
+    max_revs = [0]
+    for filename in os.listdir('src'):
+        if not os.path.isfile('src/' + filename):
+            continue
+            
+        with open('src/' + filename) as f:
+            data = f.read()
+            
+        max_revs += map(int, RE_REVISION.findall(data))
+        
+    rev = str(max(max_revs))
+    with open('src/binutils_version.h', 'r+') as f:
+        data = RE_REVISION.sub(rev, f.read())
+        print data
+        f.write(data)
+
+
+# =============================================================================
 # >> SETUP
 # =============================================================================
+updateCppVersion()
+
 module = Extension(
     '_binutils',
     sources=SOURCES,
