@@ -89,7 +89,7 @@ RE_REVISION = re.compile(r'\$Rev: (\d+) \$')
 # >> FUNCTIONS
 # =============================================================================
 def updateCppVersion():
-    max_revs = [0]
+    max_revs = set((0,))
     for filename in os.listdir('src'):
         if not os.path.isfile('src/' + filename):
             continue
@@ -97,7 +97,9 @@ def updateCppVersion():
         with open('src/' + filename) as f:
             data = f.read()
 
-        max_revs += map(int, RE_REVISION.findall(data))
+        result = RE_REVISION.search(data)
+        if result:
+            max_revs.add(int(result.group(1)))
 
     rev = max(max_revs)
     with open('src/binutils_version.h', 'r') as f:
