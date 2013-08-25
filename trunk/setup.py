@@ -70,6 +70,8 @@ else:
 # >> COMPILER FLAGS
 # =============================================================================
 COMPILER_FLAGS = [
+	# This disables annoying visibility warnings
+	'-Wno-attributes',
 ]
 
 
