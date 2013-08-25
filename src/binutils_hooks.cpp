@@ -100,6 +100,7 @@ HookRetBuf_t* CCallbackManager::DoPreCalls(CDetour* pDetour)
 			buffer->eRes = HOOKRES_OVERRIDE;
 			switch(pDetour->GetFuncObj()->GetRetType()->GetType())
 			{
+				case TYPE_VOID: break;
 				case TYPE_BOOL:			SetAddr<bool>(pRetReg, retval); break;
 				case TYPE_CHAR:			SetAddr<char>(pRetReg, retval); break;
 				case TYPE_UCHAR:		SetAddr<unsigned >(pRetReg, retval); break;
@@ -171,6 +172,7 @@ HookRetBuf_t* CCallbackManager::DoPostCalls(CDetour* pDetour)
 			buffer->eRes = HOOKRES_OVERRIDE;
 			switch(pDetour->GetFuncObj()->GetRetType()->GetType())
 			{
+				case TYPE_VOID: break;
 				case TYPE_BOOL:			SetAddr<bool>(pRetReg, pyretval); break;
 				case TYPE_CHAR:			SetAddr<char>(pRetReg, pyretval); break;
 				case TYPE_UCHAR:		SetAddr<unsigned >(pRetReg, pyretval); break;
