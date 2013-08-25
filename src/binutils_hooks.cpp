@@ -1,7 +1,7 @@
 /**
 * =============================================================================
 * binutils
-* Copyright(C) 2012 Ayuto. All rights reserved.
+* Copyright(C) 2013 Ayuto. All rights reserved.
 * =============================================================================
 *
 * This program is free software; you can redistribute it and/or modify it under
@@ -17,19 +17,9 @@
 * this program.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-/*
- * $Rev$
- * $Author$
- * $Date$
-*/
-
 // ============================================================================
 // >> INCLUDES
 // ============================================================================
-// C/C++
-#include "Python.h"
-
-// DynDetours
 #include "conv_interface.h"
 #include "detour_class.h"
 #include "func_class.h"
@@ -37,189 +27,303 @@
 #include "func_types.h"
 #include "register_class.h"
 
-// binutils
 #include "binutils_hooks.h"
-#include "binutils_utilities.h"
+#include "binutils_tools.h"
+#include "binutils_macros.h"
+
+#include "boost/python.hpp"
+using namespace boost::python;
 
 
 // ============================================================================
-// >> CLASS MEMBERS
+// >> Helper functions to read, set and convert addresses
+// ============================================================================
+template<class T>
+object ReadAddr(void* pAddr)
+{
+	return object(*(T *) pAddr);
+}
+
+template<class T>
+void SetAddr(void* pAddr, object value)
+{
+	*(T *) pAddr = extract<T>(value);
+}
+
+// ============================================================================
+// >> CCallbackManager
 // ============================================================================
 void CCallbackManager::Add(void* pFunc, eHookType type)
 {
-    if (!pFunc)
-        return;
+	if (!pFunc)
+		return;
 
-    switch (type)
-    {
-        case TYPE_PRE:  m_PreCalls.push_front((PyObject*) pFunc); break;
-        case TYPE_POST: m_PostCalls.push_front((PyObject*) pFunc); break;
-    }
+	PyObject* callable = (PyObject *) pFunc;
+	switch (type)
+	{
+		case TYPE_PRE:  m_PreCalls.push_front(callable); break;
+		case TYPE_POST: m_PostCalls.push_front(callable); break;
+	}
 }
 
 void CCallbackManager::Remove(void* pFunc, eHookType type)
 {
-    if (!pFunc)
-        return;
+	if (!pFunc)
+		return;
 
-    switch (type)
-    {
-        case TYPE_PRE:  m_PreCalls.remove((PyObject *) pFunc); break;
-        case TYPE_POST: m_PostCalls.remove((PyObject *) pFunc); break;
-    }
+	PyObject* callable = (PyObject *) pFunc;
+	switch (type)
+	{
+		case TYPE_PRE:  m_PreCalls.remove(callable); break;
+		case TYPE_POST: m_PostCalls.remove(callable); break;
+	}
 }
 
 HookRetBuf_t* CCallbackManager::DoPreCalls(CDetour* pDetour)
 {
-    if (!pDetour)
-        return NULL;
+	if (!pDetour)
+		return NULL;
 
-    HookRetBuf_t* buffer = new HookRetBuf_t;
-    buffer->eRes = HOOKRES_NONE;
-    buffer->pRetBuf = 0;
+	HookRetBuf_t* buffer = new HookRetBuf_t;
+	buffer->eRes = HOOKRES_NONE;
+	buffer->pRetBuf = NULL;
 
-    PyObject* pArgList = GetArgList(pDetour);
-    list<PyObject *>::iterator iter;
-    for (iter=m_PreCalls.begin(); iter != m_PreCalls.end(); iter++)
-    {
-	    PyObject* pTuple = PyObject_CallFunction(*iter, "O", pArgList);
-	    if (PyErr_Occurred() || !pTuple)
-        {
-            PyErr_Print();
-            continue;
-	    }
+	CStackData stackdata = CStackData(pDetour);
+	void* pRetReg = pDetour->GetAsmBridge()->GetConv()->GetRegisters()->r_retreg;
+	for (std::list<PyObject *>::iterator iter=m_PreCalls.begin(); iter != m_PreCalls.end(); iter++)
+	{
+		BEGIN_BOOST_PY()
 
-        eHookRes action = HOOKRES_ERROR;
-        void* result    = NULL;
-        if (!PyArg_ParseTuple(pTuple, "ik", &action, &result))
-            continue;
-
-        if (action >= buffer->eRes)
-        {
-            buffer->eRes = action;
-            buffer->pRetBuf = result;
-        }
-    }
-
-    if (buffer->eRes == HOOKRES_NEWPARAMS)
-        SetNewArgs(pDetour, pArgList);
-
-    Py_XDECREF(pArgList);
-    return buffer;
+		object retval = CALL_PY_FUNC(*iter, stackdata);
+		if (!retval.is_none())
+		{
+			buffer->eRes = HOOKRES_OVERRIDE;
+			switch(pDetour->GetFuncObj()->GetRetType()->GetType())
+			{
+				case TYPE_BOOL:			SetAddr<bool>(pRetReg, retval); break;
+				case TYPE_CHAR:			SetAddr<char>(pRetReg, retval); break;
+				case TYPE_UCHAR:		SetAddr<unsigned >(pRetReg, retval); break;
+				case TYPE_SHORT:		SetAddr<short>(pRetReg, retval); break;
+				case TYPE_USHORT:		SetAddr<unsigned short>(pRetReg, retval); break;
+				case TYPE_INT:			SetAddr<int>(pRetReg, retval); break;
+				case TYPE_UINT:			SetAddr<unsigned int>(pRetReg, retval); break;
+				case TYPE_LONG:			SetAddr<long>(pRetReg, retval); break;
+				case TYPE_ULONG:		SetAddr<unsigned long>(pRetReg, retval); break;
+				case TYPE_LONGLONG:		SetAddr<long long>(pRetReg, retval); break;
+				case TYPE_ULONGLONG:	SetAddr<unsigned long long>(pRetReg, retval); break;
+				case TYPE_FLOAT:		SetAddr<float>(pRetReg, retval); break;
+				case TYPE_DOUBLE:		SetAddr<double>(pRetReg, retval); break;
+				case TYPE_POINTER:
+				{
+					unsigned long retptr = ExtractPyPtr(retval);
+					*(void **) pRetReg = (void *) retptr;
+				} break;
+				case TYPE_STRING:		SetAddr<const char*>(pRetReg, retval); break;
+				default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown type.")
+			}
+		}
+		END_BOOST_PY_NORET()
+	}
+	return buffer;
 }
 
 HookRetBuf_t* CCallbackManager::DoPostCalls(CDetour* pDetour)
 {
-    HookRetBuf_t* buffer = new HookRetBuf_t;
-    buffer->eRes = HOOKRES_NONE;
-    buffer->pRetBuf = 0;
-    return buffer;
-}
+	if (!pDetour)
+		return NULL;
 
+	HookRetBuf_t* buffer = new HookRetBuf_t;
+	buffer->eRes = HOOKRES_NONE;
+	buffer->pRetBuf = NULL;
 
-// ============================================================================
-// >> FUNCTIONS
-// ============================================================================
-void SetNewArgs(CDetour* pDetour, PyObject* pArgList)
-{
-    CRegisterObj* pRegisters = pDetour->GetAsmBridge()->GetConv()->GetRegisters();
-    CFuncObj* pFunction      = pDetour->GetFuncObj();
-    CFuncStack* pStack       = pFunction->GetStack();
-    eCallConv convention     = pFunction->GetConvention();
+	CStackData stackdata = CStackData(pDetour);
 
-    unsigned int i = 0;
+	void* pRetReg = pDetour->GetAsmBridge()->GetConv()->GetRegisters()->r_retreg;
+	object retval;
+	switch(pDetour->GetFuncObj()->GetRetType()->GetType())
+	{
+		case TYPE_VOID:			retval = object(); break;
+		case TYPE_BOOL:			retval = ReadAddr<bool>(pRetReg); break;
+		case TYPE_CHAR:			retval = ReadAddr<char>(pRetReg); break;
+		case TYPE_UCHAR:		retval = ReadAddr<unsigned char>(pRetReg); break;
+		case TYPE_SHORT:		retval = ReadAddr<short>(pRetReg); break;
+		case TYPE_USHORT:		retval = ReadAddr<unsigned short>(pRetReg); break;
+		case TYPE_INT:			retval = ReadAddr<int>(pRetReg); break;
+		case TYPE_UINT:			retval = ReadAddr<unsigned int>(pRetReg); break;
+		case TYPE_LONG:			retval = ReadAddr<long>(pRetReg); break;
+		case TYPE_ULONG:		retval = ReadAddr<unsigned long>(pRetReg); break;
+		case TYPE_LONGLONG:		retval = ReadAddr<long long>(pRetReg); break;
+		case TYPE_ULONGLONG:	retval = ReadAddr<unsigned long long>(pRetReg); break;
+		case TYPE_FLOAT:		retval = ReadAddr<float>(pRetReg); break;
+		case TYPE_DOUBLE:		retval = ReadAddr<double>(pRetReg); break;
+		case TYPE_POINTER:		retval = object(CPointer(*(unsigned long *) pRetReg)); break;
+		case TYPE_STRING:		retval = ReadAddr<const char *>(pRetReg); break;
+		default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown type.");
+	}
 
-    // Read and set thisptr at first
-    if (convention == CONV_THISCALL)
-    {
-        // If it's a thiscall, we skip the first entry in our list
-        i++;
+	for (std::list<PyObject *>::iterator iter=m_PostCalls.begin(); iter != m_PostCalls.end(); iter++)
+	{
+		BEGIN_BOOST_PY()
 
-        unsigned long thisptr = PyInt_AsLong(PyList_GetItem(pArgList, 0));
-        if (thisptr)
-        {
-        #ifdef _WIN32
-            pRegisters->r_ecx = thisptr;
-        #else
-            unsigned long* addr = (unsigned long *) (pRegisters->r_esp + 4);
-            *addr = thisptr;
-        #endif
-        }
-    }
-
-    for(; i < pFunction->GetNumArgs(); i++)
-    {
-        ArgNode_t* pArgNode = pStack->GetArgument(convention == CONV_THISCALL ? i-1: i);
-        CFuncArg* pArg      = pArgNode->m_pArg;
-
-        int offset = pArgNode->m_nOffset;
-
-        // Hack for thiscalls on Linux
-        #ifdef __linux__
-        if (convention == CONV_THISCALL)
-            offset += 4;
-        #endif
-
-        void* addr = (void *) (pRegisters->r_esp + 4 + offset);
-        PyObject* value = PyList_GetItem(pArgList, i);
-        switch (pArg->GetType())
-        {
-            case TYPE_BOOL:	     SetAddr<bool>(addr, PyBool_Check(value)); break;
-            case TYPE_INT32:     SetAddr<int>(addr, PyInt_AsLong(value)); break;
-            case TYPE_INT32_PTR: SetAddr<void *>(addr, (void *) PyInt_AsLong(value)); break;
-            case TYPE_CHAR_PTR:  SetAddr<char *>(addr, PyString_AsString(value)); break;
-            default: printf("Unknown argument eArgType %i\n", pArg->GetType()); break;
-        }
-    }
-}
-
-PyObject* GetArgList(CDetour* pDetour)
-{
-    CRegisterObj* pRegisters = pDetour->GetAsmBridge()->GetConv()->GetRegisters();
-    CFuncObj* pFunction      = pDetour->GetFuncObj();
-    CFuncStack* pStack       = pFunction->GetStack();
-
-    // List to save all arguments
-    PyObject* pArgList = PyList_New(0);
-
-    if (pFunction->GetConvention() == CONV_THISCALL)
-    {
-    #ifdef __linux__
-        unsigned long thisptr =  pRegisters->r_esp + 4;
-    #else
-        unsigned long thisptr = pRegisters->r_ecx;
-    #endif
-
-        PyObject* pyThis = Py_BuildValue("k", thisptr);
-        PyList_Append(pArgList, pyThis);
-        Py_XDECREF(pyThis);
-    }
-
-    for(unsigned int i=0; i < pFunction->GetNumArgs(); i++)
-    {
-        ArgNode_t* pArgNode = pStack->GetArgument(i);
-        CFuncArg* pArg      = pArgNode->m_pArg;
-
-        int offset = pArgNode->m_nOffset;
-
-        #ifdef __linux__
-        // Hack for thiscalls on Linux
-        if (pFunction->GetConvention() == CONV_THISCALL)
-            offset += 4;
-        #endif
-
-        void* addr      = (void *) (pRegisters->r_esp + 4 + offset);
-        PyObject* value = NULL;
-        switch(pArg->GetType())
+		object pyretval = CALL_PY_FUNC(*iter, stackdata, retval);
+		if (!pyretval.is_none())
 		{
-			case TYPE_BOOL:      value = Py_BuildValue("i", ReadAddr<int>(addr) % 2); break;
-			case TYPE_INT32:     value = Py_BuildValue("i", ReadAddr<int>(addr)); break;
-			case TYPE_INT32_PTR: value = Py_BuildValue("k", ReadAddr<unsigned long>(addr)); break;
-			case TYPE_FLOAT:     value = Py_BuildValue("f", ReadAddr<float>(addr)); break;
-            case TYPE_CHAR_PTR:  value = Py_BuildValue("s", ReadAddr<char *>(addr)); break;
-            default: printf("Unknown argument eArgType %i\n", pArg->GetType()); break;
-        }
-        PyList_Append(pArgList, value);
-    }
-    return pArgList;
+			buffer->eRes = HOOKRES_OVERRIDE;
+			switch(pDetour->GetFuncObj()->GetRetType()->GetType())
+			{
+				case TYPE_BOOL:			SetAddr<bool>(pRetReg, pyretval); break;
+				case TYPE_CHAR:			SetAddr<char>(pRetReg, pyretval); break;
+				case TYPE_UCHAR:		SetAddr<unsigned >(pRetReg, pyretval); break;
+				case TYPE_SHORT:		SetAddr<short>(pRetReg, pyretval); break;
+				case TYPE_USHORT:		SetAddr<unsigned short>(pRetReg, pyretval); break;
+				case TYPE_INT:			SetAddr<int>(pRetReg, pyretval); break;
+				case TYPE_UINT:			SetAddr<unsigned int>(pRetReg, pyretval); break;
+				case TYPE_LONG:			SetAddr<long>(pRetReg, pyretval); break;
+				case TYPE_ULONG:		SetAddr<unsigned long>(pRetReg, pyretval); break;
+				case TYPE_LONGLONG:		SetAddr<long long>(pRetReg, pyretval); break;
+				case TYPE_ULONGLONG:	SetAddr<unsigned long long>(pRetReg, pyretval); break;
+				case TYPE_FLOAT:		SetAddr<float>(pRetReg, pyretval); break;
+				case TYPE_DOUBLE:		SetAddr<double>(pRetReg, pyretval); break;
+				case TYPE_POINTER:
+				{
+					unsigned long retptr = ExtractPyPtr(pyretval);
+					*(void **) pRetReg = (void *) retptr;
+				} break;
+				case TYPE_STRING:		SetAddr<const char*>(pRetReg, pyretval); break;
+				default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown type.")
+			}
+		}
+		END_BOOST_PY_NORET()
+	}
+	return buffer;
+}
+
+
+// ============================================================================
+// >> CStackData
+// ============================================================================
+CStackData::CStackData(CDetour* pDetour)
+{
+	m_pRegisters = pDetour->GetAsmBridge()->GetConv()->GetRegisters();
+	m_pFunction  = pDetour->GetFuncObj();
+	m_pStack     = m_pFunction->GetStack();
+}
+
+unsigned int CStackData::GetArgCount()
+{
+	int argnum = m_pFunction->GetNumArgs();
+	if (m_pFunction->GetConvention() == CONV_THISCALL)
+		argnum++;
+
+	return argnum;
+}
+
+object CStackData::GetArgument(unsigned int iIndex)
+{
+	if (iIndex >= GetArgCount())
+		BOOST_RAISE_EXCEPTION(PyExc_IndexError, "Index out of range.")
+
+	// Argument already cached?
+	object retval = m_mapCache[iIndex];
+	if (retval)
+		return retval;
+
+	if (m_pFunction->GetConvention() == CONV_THISCALL)
+	{
+		if (iIndex == 0)
+		{
+		#ifdef __linux__
+			unsigned long thisptr = *(unsigned long *) (m_pRegisters->r_esp + 4);
+		#else
+			unsigned long thisptr = m_pRegisters->r_ecx;
+		#endif
+			retval = m_mapCache[0] = object(CPointer(thisptr));
+			return retval;
+		}
+	}
+
+	ArgNode_t* pArgNode = m_pStack->GetArgument(m_pFunction->GetConvention() == CONV_THISCALL ? iIndex-1 : iIndex);
+	int        offset   = pArgNode->m_nOffset;
+
+	#ifdef __linux__
+		if (m_pFunction->GetConvention() == CONV_THISCALL)
+			// Add size of "this" pointer
+			offset += 4;
+	#endif
+
+	void* pAddr = (void *) (m_pRegisters->r_esp + 4 + offset);
+	switch(pArgNode->m_pArg->GetType())
+	{
+		case TYPE_BOOL:      retval = ReadAddr<bool>(pAddr); break;
+		case TYPE_CHAR:      retval = ReadAddr<char>(pAddr); break;
+		case TYPE_UCHAR:     retval = ReadAddr<unsigned char>(pAddr); break;
+		case TYPE_SHORT:     retval = ReadAddr<short>(pAddr); break;
+		case TYPE_USHORT:    retval = ReadAddr<unsigned short>(pAddr); break;
+		case TYPE_INT:       retval = ReadAddr<int>(pAddr); break;
+		case TYPE_UINT:      retval = ReadAddr<unsigned int>(pAddr); break;
+		case TYPE_LONG:      retval = ReadAddr<long>(pAddr); break;
+		case TYPE_ULONG:     retval = ReadAddr<unsigned long>(pAddr); break;
+		case TYPE_LONGLONG:  retval = ReadAddr<long long>(pAddr); break;
+		case TYPE_ULONGLONG: retval = ReadAddr<unsigned long long>(pAddr); break;
+		case TYPE_FLOAT:     retval = ReadAddr<float>(pAddr); break;
+		case TYPE_DOUBLE:    retval = ReadAddr<double>(pAddr); break;
+		case TYPE_POINTER:   retval = object(CPointer(*(unsigned long *) pAddr)); break;
+		case TYPE_STRING:    retval = ReadAddr<const char *>(pAddr); break;
+		default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown type.") break;
+	}
+	m_mapCache[iIndex] = retval;
+	return retval;
+}
+
+void CStackData::SetArgument(unsigned int iIndex, object value)
+{
+	if (iIndex >= GetArgCount())
+		BOOST_RAISE_EXCEPTION(PyExc_IndexError, "Index out of range.")
+
+	// Update cache
+	m_mapCache[iIndex] = value;
+
+	// Update address
+	if (m_pFunction->GetConvention() == CONV_THISCALL)
+	{
+		if (iIndex == 0)
+		{
+		#ifdef __linux__
+			SetAddr<unsigned long>((void *) (m_pRegisters->r_esp + 4), value);
+		#else
+			m_pRegisters->r_ecx = extract<unsigned long>(value);
+		#endif
+			return;
+		}
+	}
+
+	ArgNode_t* pArgNode = m_pStack->GetArgument(m_pFunction->GetConvention() == CONV_THISCALL ? iIndex-1 : iIndex);
+	int        offset   = pArgNode->m_nOffset;
+
+	#ifdef __linux__
+		if (m_pFunction->GetConvention() == CONV_THISCALL)
+			// Add size of "this" pointer
+			offset += 4;
+	#endif
+
+	void* ulAddr = (void*)(m_pRegisters->r_esp + 4 + offset);
+	switch(pArgNode->m_pArg->GetType())
+	{
+		case TYPE_BOOL:      SetAddr<bool>(ulAddr, value); break;
+		case TYPE_CHAR:      SetAddr<char>(ulAddr, value); break;
+		case TYPE_UCHAR:     SetAddr<unsigned char>(ulAddr, value); break;
+		case TYPE_SHORT:     SetAddr<short>(ulAddr, value); break;
+		case TYPE_USHORT:    SetAddr<unsigned short>(ulAddr, value); break;
+		case TYPE_INT:       SetAddr<int>(ulAddr, value); break;
+		case TYPE_UINT:      SetAddr<unsigned int>(ulAddr, value); break;
+		case TYPE_LONG:      SetAddr<long>(ulAddr, value); break;
+		case TYPE_ULONG:     SetAddr<unsigned long>(ulAddr, value); break;
+		case TYPE_LONGLONG:  SetAddr<long long>(ulAddr, value); break;
+		case TYPE_ULONGLONG: SetAddr<unsigned long long>(ulAddr, value); break;
+		case TYPE_FLOAT:     SetAddr<float>(ulAddr, value); break;
+		case TYPE_DOUBLE:    SetAddr<double>(ulAddr, value); break;
+		case TYPE_POINTER:   *(unsigned long *) ulAddr = ExtractPyPtr(value); break;
+		case TYPE_STRING:    SetAddr<const char *>(ulAddr, value); break;
+		default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown type.")
+	}
 }
