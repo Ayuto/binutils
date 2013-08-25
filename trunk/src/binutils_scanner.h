@@ -1,7 +1,7 @@
 /**
 * =============================================================================
 * binutils
-* Copyright(C) 2012 Ayuto. All rights reserved.
+* Copyright(C) 2013 Ayuto. All rights reserved.
 * =============================================================================
 *
 * This program is free software; you can redistribute it and/or modify it under
@@ -17,69 +17,57 @@
 * this program.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-/*
- * $Rev$
- * $Author$
- * $Date$
-*/
-
-#ifndef BINUTILS_SCANNER_H
-#define BINUTILS_SCANNER_H
+#ifndef _BINUTILS_SCANNER_H
+#define _BINUTILS_SCANNER_H
 
 // ============================================================================
 // >> INCLUDES
 // ============================================================================
-// C/C++
 #include <list>
-
-// DynCall
-#include "dynload.h"
+#include "binutils_tools.h"
 
 
 // ============================================================================
-// >> CLASSES & STRUCTS
+// >> CLASSES
 // ============================================================================
 struct Signature_t
 {
-    unsigned char* szSignature;
-    void* pAddr;
+	unsigned char* m_szSignature;
+	unsigned long  m_ulAddr;
 };
 
 
-class Binary
+class CBinaryFile
 {
-private:
-    // Start address
-    void* m_pHandle;
-
-    // Whole size
-    unsigned long m_iSize;
-
-    // All searched signatures and their addresses (as hooking breaks the signature)
-    std::list<Signature_t> m_SigCache;
-
 public:
-    Binary(void* pHandle, unsigned long iSize);
+	CBinaryFile(unsigned long ulAddr, unsigned long ulSize);
 
-    // Returns the address of a signature
-    void* FindSignature(unsigned char* sig, int length);
+	CPointer* FindSignature(object szSignature);
+	CPointer* FindSymbol(char* szSymbol);
+	CPointer* FindPointer(object szSignature, int iOffset);
 
-    // Returns the address of a symbol
-    void* FindSymbol(const char* symbol);
+	unsigned long GetAddress() { return m_ulAddr; }
+	unsigned long GetSize() { return m_ulSize; }
 
-    void* GetHandle() { return m_pHandle; }
-    unsigned long GetSize() { return m_iSize; }
+private:
+	unsigned long          m_ulAddr;
+	unsigned long          m_ulSize;
+	std::list<Signature_t> m_Signatures;
 };
 
 
-class BinaryManager
+class CBinaryManager
 {
-private:
-    // Container for all binaries
-    std::list<Binary *> m_Binaries;
-
 public:
-    Binary* GetBinary(const char* path);
+	CBinaryFile* FindBinary(char* szPath, bool bSrvCheck = true);
+
+private:
+	std::list<CBinaryFile*> m_Binaries;
 };
 
-#endif // BINUTILS_SCANNER_H
+// ============================================================================
+// >> FUNCTIONS
+// ============================================================================
+CBinaryFile* FindBinary(char* szPath, bool bSrvCheck = true);
+
+#endif // _BINUTILS_SCANNER_H

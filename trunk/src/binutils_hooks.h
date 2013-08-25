@@ -1,7 +1,7 @@
 /**
 * =============================================================================
 * binutils
-* Copyright(C) 2012 Ayuto. All rights reserved.
+* Copyright(C) 2013 Ayuto. All rights reserved.
 * =============================================================================
 *
 * This program is free software; you can redistribute it and/or modify it under
@@ -17,26 +17,24 @@
 * this program.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-/*
- * $Rev$
- * $Author$
- * $Date$
-*/
-
-#ifndef BINUTILS_HOOKS_H
-#define BINUTILS_HOOKS_H
+#ifndef _BINUTILS_HOOKS_H
+#define _BINUTILS_HOOKS_H
 
 // ============================================================================
 // >> INCLUDES
 // ============================================================================
-// Python
-#include "Python.h"
-
-// C/C++
 #include <list>
+#include <map>
 
-// DynDetours
 #include "callback_manager.h"
+#include "func_class.h"
+#include "func_stack.h"
+#include "register_class.h"
+
+#include "binutils_tools.h"
+
+#include "boost/python.hpp"
+using namespace boost::python;
 
 
 // ============================================================================
@@ -44,25 +42,40 @@
 // ============================================================================
 class CCallbackManager: public ICallbackManager
 {
-	private:
-        list<PyObject *> m_PreCalls;
-        list<PyObject *> m_PostCalls;
+private:
+	std::list<PyObject *> m_PreCalls;
+	std::list<PyObject *> m_PostCalls;
 
-	public:
-		virtual void Add(void* pFunc, eHookType type);
-		virtual void Remove(void* pFunc, eHookType type);
+public:
+	virtual void Add(void* pFunc, eHookType type);
+	virtual void Remove(void* pFunc, eHookType type);
 
-		virtual HookRetBuf_t* DoPreCalls(CDetour* pDetour);
-		virtual HookRetBuf_t* DoPostCalls(CDetour* pDetour);
+	virtual HookRetBuf_t* DoPreCalls(CDetour* pDetour);
+	virtual HookRetBuf_t* DoPostCalls(CDetour* pDetour);
 
-		virtual const char* GetLang() { return "Python"; }
+	virtual const char* GetLang() { return "Python"; }
 };
 
+class CStackData
+{
+public:
+	CStackData(CDetour* pDetour);
 
-// ============================================================================
-// >> FUNCTIONS
-// ============================================================================
-PyObject* GetArgList(CDetour* pDetour);
-void SetNewArgs(CDetour* pDetour, PyObject* pArgList);
+	CPointer* GetESP() { return new CPointer(m_pRegisters->r_esp); }
+	CPointer* GetECX() { return new CPointer(m_pRegisters->r_ecx); }
+	CPointer* GetEBP() { return new CPointer(m_pRegisters->r_ebp); }
+	CPointer* GetEDX() { return new CPointer(m_pRegisters->r_edx); }
 
-#endif // BINUTILS_HOOKS_H
+	object GetArgument(unsigned int iIndex);
+	void   SetArgument(unsigned int iIndex, object value);
+
+	unsigned int GetArgCount();
+
+private:
+	CRegisterObj*    m_pRegisters;
+	CFuncObj*        m_pFunction;
+	CFuncStack*      m_pStack;
+	map<int, object> m_mapCache;
+};
+
+#endif // _BINUTILS_HOOKS_H
