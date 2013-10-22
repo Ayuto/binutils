@@ -27,13 +27,10 @@
 
 #include "dyncall.h"
 
-#include "hook_types.h"
-#include "detour_class.h"
-
 void ExposeScanner();
 void ExposeTools();
 void ExposeDynCall();
-void ExposeDynDetours();
+void ExposeDynamicHooks();
 
 // ============================================================================
 // >> Expose the binutils module
@@ -43,7 +40,7 @@ BOOST_PYTHON_MODULE(binutils)
 	ExposeScanner();
 	ExposeTools();
 	ExposeDynCall();
-	ExposeDynDetours();
+	ExposeDynamicHooks();
 }
 
 // ============================================================================
@@ -449,7 +446,7 @@ void ExposeTools()
 		)
 	;
 
-	class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention, char*>())
+	class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*>())
 
 		CLASS_METHOD_VARIADIC("__call__",
 			&CFunction::__call__,
@@ -491,13 +488,10 @@ void ExposeTools()
 // ============================================================================
 void ExposeDynCall()
 {
-	enum_<Convention>("Convention")
-		.value("CDECL", _CONV_CDECL)
-	#ifdef _WIN32
-		.value("STDCALL", _CONV_STDCALL)
-	#endif
-		.value("FASTCALL", _CONV_FASTCALL)
-		.value("THISCALL", _CONV_THISCALL)
+	enum_<Convention_t>("Convention")
+		.value("CDECL", CONV_CDECL)
+		.value("STDCALL", CONV_STDCALL)
+		.value("THISCALL", CONV_THISCALL)
 	;
 
 	// Other constants that are very useful.
@@ -511,54 +505,21 @@ void ExposeDynCall()
 }
 
 // ============================================================================
-// >> Expose DynDetours
+// >> Expose DynamicHooks
 // ============================================================================
-void ExposeDynDetours()
+void ExposeDynamicHooks()
 {
-	class_<CStackData>("StackData", init<CDetour*>())
+	class_<CStackData>("StackData", init<CHook*>())
 
 		// Special methods
 		.def("__getitem__",
-			&CStackData::GetArgument,
+			&CStackData::GetItem,
 			"Returns the argument at the specified index."
 		)
 
 		.def("__setitem__",
-			&CStackData::SetArgument,
+			&CStackData::SetItem,
 			"Sets the argument at the specified index."
-		)
-
-		// Properties
-		.add_property("esp",
-			make_function(
-				&CStackData::GetESP,
-				manage_new_object_policy()
-			),
-			"Stack pointer register."
-		)
-
-		.add_property("ecx",
-			make_function(
-				&CStackData::GetECX,
-				manage_new_object_policy()
-			),
-			"Counter register."
-		)
-
-		.add_property("ebp",
-			make_function(
-				&CStackData::GetEBP,
-				manage_new_object_policy()
-			),
-			"Base pointer register."
-		)
-
-		.add_property("edx",
-			make_function(
-				&CStackData::GetEDX,
-				manage_new_object_policy()
-			),
-			"Data register."
 		)
 	;
 }

@@ -1,9 +1,8 @@
 /**
-* ======================================================
-* DynDetours
-* Copyright (C) 2009 Deniz Sezen
-* All rights reserved.
-* ======================================================
+* =============================================================================
+* DynamicHooks
+* Copyright (C) 2013 Robin Gohmert. All rights reserved.
+* =============================================================================
 *
 * This software is provided 'as-is', without any express or implied warranty.
 * In no event will the authors be held liable for any damages arising from 
@@ -23,8 +22,10 @@
 *
 * 3. This notice may not be removed or altered from any source distribution.
 *
-* asm.h/c from devmaster.net (thanks cybermind) edited by pRED* to handle gcc
+* asm.h/cpp from devmaster.net (thanks cybermind) edited by pRED* to handle gcc
 * -fPIC thunks correctly
+*
+* Idea and trampoline code taken from DynDetours (thanks your-name-here).
 */
 
 #ifndef __ASM_H__

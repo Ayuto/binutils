@@ -25,27 +25,35 @@
 // ============================================================================
 #include <malloc.h>
 #include "binutils_macros.h"
-#include "hook_types.h"
 #include "dyncall.h"
+
+#include "DynamicHooks.h"
+using namespace DynamicHooks;
+
 #include "boost/python.hpp"
 using namespace boost::python;
 
 
 // ============================================================================
-// >> Convention enum
+// >> Convention_t enum
 // ============================================================================
-enum Convention
+inline int GetDynCallConvention(Convention_t eConv)
 {
-	_CONV_CDECL = DC_CALL_C_DEFAULT,
-#ifdef _WIN32
-	_CONV_STDCALL = DC_CALL_C_X86_WIN32_STD,
-	_CONV_FASTCALL = DC_CALL_C_X86_WIN32_FAST_MS,
-	_CONV_THISCALL = DC_CALL_C_X86_WIN32_THIS_MS
-#else
-	_CONV_FASTCALL = DC_CALL_C_X86_WIN32_FAST_GNU,
-	_CONV_THISCALL = DC_CALL_C_X86_WIN32_THIS_GNU
-#endif
-};
+	switch (eConv)
+	{
+		case CONV_CDECL: return DC_CALL_C_DEFAULT;
+		case CONV_THISCALL:
+		#ifdef _WIN32
+			return DC_CALL_C_X86_WIN32_THIS_MS;
+		#else
+			return DC_CALL_C_X86_WIN32_THIS_GNU;
+		#endif
+		case CONV_STDCALL: return DC_CALL_C_X86_WIN32_STD;
+	}
+
+	// TODO: Throw exception
+	return 0;
+}
 
 // ============================================================================
 // >> CLASSES
@@ -94,7 +102,7 @@ public:
 	void                Realloc(unsigned long ulSize);
 	void                Dealloc();
 
-	CFunction*          MakeFunction(Convention eConv, char* szParams);
+	CFunction*          MakeFunction(Convention_t eConv, char* szParams);
 
 protected:
 	unsigned long m_ulAddr;
@@ -103,13 +111,13 @@ protected:
 class CFunction: public CPointer
 {
 public:
-	CFunction(unsigned long ulAddr, Convention eConv, char* szParams);
+	CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams);
 
 	object __call__(object args);
 	object CallTrampoline(object args);
 
-	void Hook(eHookType eType, PyObject* pCallable);
-	void Unhook(eHookType eType, PyObject* pCallable);
+	void Hook(HookType_t eType, PyObject* pCallable);
+	void Unhook(HookType_t eType, PyObject* pCallable);
 
 	void AddPreHook(PyObject* pCallable);
 	void AddPostHook(PyObject* pCallable);
@@ -118,8 +126,8 @@ public:
 	void RemovePostHook(PyObject* pCallable);
 
 private:
-	char*      m_szParams;
-	Convention m_eConv;
+	char*     	 m_szParams;
+	Convention_t m_eConv;
 };
 
 
