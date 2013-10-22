@@ -26,16 +26,15 @@
 #include "dyncall.h"
 #include "dyncall_signature.h"
 
-#include "detour_class.h"
-#include "detourman_class.h"
-#include "binutils_hooks.h"
-#include "dd_utils.h"
-
 #include "binutils_tools.h"
 #include "binutils_macros.h"
+#include "binutils_hooks.h"
 
 
 DCCallVM* g_pCallVM = dcNewCallVM(4096);
+extern std::map<CHook *, std::map<DynamicHooks::HookType_t, std::list<PyObject *> > > g_mapCallbacks;
+
+CHookManager* g_pHookMngr = GetHookManager();
 
 inline size_t UTIL_GetSize(void* ptr)
 {
@@ -153,7 +152,7 @@ void CPointer::Dealloc()
 	m_ulAddr = 0;
 }
 
-CFunction* CPointer::MakeFunction(Convention eConv, char* szParams)
+CFunction* CPointer::MakeFunction(Convention_t eConv, char* szParams)
 {
 	if (!IsValid())
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
@@ -164,7 +163,7 @@ CFunction* CPointer::MakeFunction(Convention eConv, char* szParams)
 // ============================================================================
 // CFunction class
 // ============================================================================
-CFunction::CFunction(unsigned long ulAddr, Convention eConv, char* szParams)
+CFunction::CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams)
 {
 	m_ulAddr = ulAddr;
 	m_eConv = eConv;
@@ -177,7 +176,7 @@ object CFunction::__call__(object args)
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
 	dcReset(g_pCallVM);
-	dcMode(g_pCallVM, m_eConv);
+	dcMode(g_pCallVM, GetDynCallConvention(m_eConv));
 	char* ptr = m_szParams;
 	int pos = 0;
 	char ch;
@@ -246,64 +245,53 @@ object CFunction::CallTrampoline(object args)
 	if (!IsValid())
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
-	CDetour* pDetour = g_DetourManager.Find_Detour((void *) m_ulAddr);
-	if (!pDetour)
+	CHook* pHook = g_pHookMngr->FindHook((void *) m_ulAddr);
+	if (!pHook)
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function was not hooked.")
 
-	return CFunction((unsigned long) pDetour->GetTrampoline(), m_eConv, m_szParams).__call__(args);
+	return CFunction((unsigned long) pHook->m_pTrampoline, m_eConv, m_szParams).__call__(args);
 }
 
-void CFunction::Hook(eHookType eType, PyObject* pCallable)
+void CFunction::Hook(DynamicHooks::HookType_t eType, PyObject* pCallable)
 {
 	if (!IsValid())
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
-	CDetour* pDetour = g_DetourManager.Add_Detour((void*) m_ulAddr, m_szParams, (eCallConv) m_eConv);
-	if (!pDetour)
-		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Failed to hook function.")
-
-	ICallbackManager* mngr = pDetour->GetManager("Python", eType);
-	if (!mngr)
-	{
-		mngr = new CCallbackManager;
-		pDetour->AddManager(mngr, eType);
-	}
-
-	mngr->Add((void *) pCallable, eType);
+	CHook* pHook = g_pHookMngr->HookFunction((void *) m_ulAddr, m_eConv, m_szParams);
+	pHook->AddCallback(eType, (void *) &binutils_HookHandler);
+	g_mapCallbacks[pHook][eType].push_back(pCallable);
 }
 
-void CFunction::Unhook(eHookType eType, PyObject* pCallable)
+void CFunction::Unhook(DynamicHooks::HookType_t eType, PyObject* pCallable)
 {
 	if (!IsValid())
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
-	CDetour* pDetour = g_DetourManager.Find_Detour((void *) m_ulAddr);
-	if (!pDetour)
+	CHook* pHook = g_pHookMngr->FindHook((void *) m_ulAddr);
+	if (!pHook)
 		return;
 
-	ICallbackManager* mngr = pDetour->GetManager("Python", eType);
-	if (mngr)
-		mngr->Remove((void *) pCallable, eType);
+	g_mapCallbacks[pHook][eType].remove(pCallable);
 }
 
 void CFunction::AddPreHook(PyObject* pCallable)
 {
-	Hook(TYPE_PRE, pCallable);
+	Hook(HOOKTYPE_PRE, pCallable);
 }
 
 void CFunction::AddPostHook(PyObject* pCallable)
 {
-	Hook(TYPE_POST, pCallable);
+	Hook(HOOKTYPE_POST, pCallable);
 }
 
 void CFunction::RemovePreHook(PyObject* pCallable)
 {
-	Unhook(TYPE_PRE, pCallable);
+	Unhook(HOOKTYPE_PRE, pCallable);
 }
 
 void CFunction::RemovePostHook(PyObject* pCallable)
 {
-	Unhook(TYPE_POST, pCallable);
+	Unhook(HOOKTYPE_POST, pCallable);
 }
 
 // ============================================================================

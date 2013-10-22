@@ -23,13 +23,10 @@
 // ============================================================================
 // >> INCLUDES
 // ============================================================================
-#include <list>
 #include <map>
 
-#include "callback_manager.h"
-#include "func_class.h"
-#include "func_stack.h"
-#include "register_class.h"
+#include "DynamicHooks.h"
+using namespace DynamicHooks;
 
 #include "binutils_tools.h"
 
@@ -40,42 +37,23 @@ using namespace boost::python;
 // ============================================================================
 // >> CLASSES
 // ============================================================================
-class CCallbackManager: public ICallbackManager
-{
-private:
-	std::list<PyObject *> m_PreCalls;
-	std::list<PyObject *> m_PostCalls;
-
-public:
-	virtual void Add(void* pFunc, eHookType type);
-	virtual void Remove(void* pFunc, eHookType type);
-
-	virtual HookRetBuf_t* DoPreCalls(CDetour* pDetour);
-	virtual HookRetBuf_t* DoPostCalls(CDetour* pDetour);
-
-	virtual const char* GetLang() { return "Python"; }
-};
-
 class CStackData
 {
 public:
-	CStackData(CDetour* pDetour);
+	CStackData(CHook* pHook);
 
-	CPointer* GetESP() { return new CPointer(m_pRegisters->r_esp); }
-	CPointer* GetECX() { return new CPointer(m_pRegisters->r_ecx); }
-	CPointer* GetEBP() { return new CPointer(m_pRegisters->r_ebp); }
-	CPointer* GetEDX() { return new CPointer(m_pRegisters->r_edx); }
-
-	object GetArgument(unsigned int iIndex);
-	void   SetArgument(unsigned int iIndex, object value);
-
-	unsigned int GetArgCount();
+	object GetItem(unsigned int iIndex);
+	void   SetItem(unsigned int iIndex, object value);
 
 private:
-	CRegisterObj*    m_pRegisters;
-	CFuncObj*        m_pFunction;
-	CFuncStack*      m_pStack;
-	map<int, object> m_mapCache;
+	CHook*                m_pHook;
+	std::map<int, object> m_mapCache;
 };
+
+
+// ============================================================================
+// >> FUNCTIONS
+// ============================================================================
+bool binutils_HookHandler(DynamicHooks::HookType_t eHookType, CHook* pHook);
 
 #endif // _BINUTILS_HOOKS_H

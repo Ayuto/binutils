@@ -13,10 +13,16 @@ from distutils.core import setup
 # >> PROJECT SOURCES
 # =============================================================================
 SOURCES = [
+    # binutils
     'src/binutils_wrap.cpp',
     'src/binutils_tools.cpp',
     'src/binutils_hooks.cpp',
     'src/binutils_scanner.cpp',
+    
+    # DynamicHooks
+    'src/thirdparty/DynamicHooks/DynamicHooks.cpp',
+    'src/thirdparty/DynamicHooks/utilities.cpp',
+    'src/thirdparty/DynamicHooks/asm.cpp',
 ]
 
 
@@ -26,7 +32,8 @@ SOURCES = [
 INCLUDE_DIRS = [
     'src/thirdparty/boost',
     'src/thirdparty/dyncall/include',
-    'src/thirdparty/dyndetours',
+    'src/thirdparty/AsmJit/include',
+    'src/thirdparty/DynamicHooks',
 ]
 
 
@@ -36,7 +43,7 @@ INCLUDE_DIRS = [
 LIBRARY_DIRS = [
     'src/thirdparty/boost/lib',
     'src/thirdparty/dyncall/lib',
-    'src/thirdparty/dyndetours/lib',
+    'src/thirdparty/AsmJit/lib',
 ]
 
 
@@ -50,7 +57,6 @@ if os.name == 'nt':
 		'libdyncall_s',
 		'libdyncallback_s',
 		'libdynload_s',
-		'libDynDetours',
 		'libAsmJit',
     ]
 
@@ -61,7 +67,6 @@ else:
 		'dyncall_s',
 		'dyncallback_s',
 		'dynload_s',
-		'DynDetours',
 		'AsmJit',
     ]
 
