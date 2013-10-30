@@ -246,7 +246,7 @@ CBinaryFile* CBinaryManager::FindBinary(char* szPath, bool bSrvCheck /* = true *
 			if (!str_ends_with(szBinaryPath.data(), ".dll"))
 				szBinaryPath += ".dll";
 		#endif
-		BOOST_RAISE_EXCEPTION(PyExc_IOError, szBinaryPath.data())
+            BOOST_RAISE_EXCEPTION(PyExc_IOError, szBinaryPath.data())
 	}
 
 	// Search for an existing BinaryFile object

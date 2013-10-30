@@ -57,8 +57,7 @@ CPointer::CPointer(unsigned long ulAddr /* = 0 */)
 
 CPointer* CPointer::Add(int iValue)
 {
-	m_ulAddr += iValue;
-	return this;
+	return new CPointer(m_ulAddr + iValue);
 }
 
 CPointer* CPointer::Sub(int iValue)
