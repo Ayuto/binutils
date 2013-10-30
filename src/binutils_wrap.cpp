@@ -76,13 +76,6 @@ void ExposeScanner()
 		)
 
 		// Special methods
-		.def("__getattr__",
-			&CBinaryFile::FindSymbol,
-			"Returns the address of a symbol found in memory.",
-			args("symbol"),
-			manage_new_object_policy()
-		)
-
 		.def("__getitem__",
 			&CBinaryFile::FindSymbol,
 			"Returns the address of a symbol found in memory.",
@@ -405,7 +398,11 @@ void ExposeTools()
 			"Returns the address of this memory block."
 		)
 
-		.def("__bool__",
+#if PYTHON_VERSION == 3
+        .def("__bool__",
+#else
+		.def("__nonzero__",
+#endif
 			&CPointer::IsValid,
 			"Returns True if the address is not NULL."
 		)
@@ -413,25 +410,13 @@ void ExposeTools()
 		.def("__add__",
 			&CPointer::Add,
 			"Adds a value to the base address.",
-			reference_existing_object_policy()
-		)
-
-		.def("__radd__",
-			&CPointer::Add,
-			"Adds a value to the base address.",
-			reference_existing_object_policy()
+			manage_new_object_policy()
 		)
 
 		.def("__sub__",
 			&CPointer::Sub,
 			"Subtracts a value from the base address.",
-			reference_existing_object_policy()
-		)
-
-		.def("__rsub__",
-			&CPointer::Sub,
-			"Subtracts a value from the base address.",
-			reference_existing_object_policy()
+			manage_new_object_policy()
 		)
 
 		// Properties
@@ -478,7 +463,7 @@ void ExposeTools()
 			"Removes a post-hook callback."
 		)
 	;
-	
+
 	DEFINE_CLASS_METHOD_VARIADIC(Function, __call__);
 	DEFINE_CLASS_METHOD_VARIADIC(Function, call_trampoline);
 }
