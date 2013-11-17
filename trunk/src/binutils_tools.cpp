@@ -135,11 +135,6 @@ CPointer* CPointer::GetVirtualFunc(int iIndex, bool bPlatformCheck /* = true */)
 	return new CPointer((unsigned long) vtable[iIndex]);
 }
 
-void CPointer::Alloc(unsigned long ulSize)
-{
-	m_ulAddr = (unsigned long) malloc(ulSize);
-}
-
 void CPointer::Realloc(unsigned long ulSize)
 {
 	m_ulAddr = (unsigned long) realloc((void *) m_ulAddr, ulSize);
