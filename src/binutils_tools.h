@@ -98,7 +98,6 @@ public:
 
 	CPointer*           GetVirtualFunc(int iIndex, bool bPlatformCheck = true);
 
-	void                Alloc(unsigned long ulSize);
 	void                Realloc(unsigned long ulSize);
 	void                Dealloc();
 
@@ -144,6 +143,11 @@ inline unsigned long ExtractPyPtr(object obj)
 		return pPtr->GetAddress();
 	}
 	return extract<unsigned long>(obj);
+}
+
+inline CPointer* Alloc(unsigned long ulSize)
+{
+    return new CPointer((unsigned long) malloc(ulSize));
 }
 
 #endif // _BINUTILS_TOOLS_H

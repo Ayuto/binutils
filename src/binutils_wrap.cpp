@@ -156,12 +156,6 @@ void ExposeTools()
 				"Returns the address (as a CPointer instance) of a virtual function at the given index.")[manage_new_object_policy()]
 		)
 
-		.def("alloc",
-			&CPointer::Alloc,
-			"Allocates a memory block.",
-			args("size")
-		)
-
 		.def("realloc",
 			&CPointer::Realloc,
 			"Reallocates a memory block.",
@@ -466,6 +460,13 @@ void ExposeTools()
 
 	DEFINE_CLASS_METHOD_VARIADIC(Function, __call__);
 	DEFINE_CLASS_METHOD_VARIADIC(Function, call_trampoline);
+    
+    def("alloc",
+        Alloc,
+        args("size"),
+        "Allocates a memory block.",
+        manage_new_object_policy()
+    );
 }
 
 // ============================================================================
