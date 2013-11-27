@@ -54,20 +54,20 @@ LIBRARY_DIRS = [
 if os.name == 'nt':
     LIBRARIES = [
         'libboost_python-mgw47-mt-1_54',
-		'libdyncall_s',
-		'libdyncallback_s',
-		'libdynload_s',
-		'libAsmJit',
+        'libdyncall_s',
+        'libdyncallback_s',
+        'libdynload_s',
+        'libAsmJit',
     ]
 
 # Linux
 else:
     LIBRARIES = [
         'boost_python',
-		'dyncall_s',
-		'dyncallback_s',
-		'dynload_s',
-		'AsmJit',
+        'dyncall_s',
+        'dyncallback_s',
+        'dynload_s',
+        'AsmJit',
     ]
 
 
@@ -75,8 +75,11 @@ else:
 # >> COMPILER FLAGS
 # =============================================================================
 COMPILER_FLAGS = [
-	# This disables annoying visibility warnings
-	'-Wno-attributes',
+    # This disables annoying visibility warnings
+    '-Wno-attributes',
+
+    # Disable parentheses suggestions
+    '-Wno-parentheses',
 ]
 
 
@@ -84,13 +87,13 @@ COMPILER_FLAGS = [
 # >> LINKER FLAGS
 # =============================================================================
 if os.name == 'nt':
-	LINKER_FLAGS = [
-		'-static-libgcc',
-		'-static-libstdc++',
-	]
+    LINKER_FLAGS = [
+        '-static-libgcc',
+        '-static-libstdc++',
+    ]
 else:
-	LINKER_FLAGS = [
-	]
+    LINKER_FLAGS = [
+    ]
 
 
 # =============================================================================
@@ -98,7 +101,7 @@ else:
 # =============================================================================
 MACROS = [
     ('BOOST_PYTHON_STATIC_LIB', ''),
-	('PYTHON_VERSION', sys.version_info[0]),
+    ('PYTHON_VERSION', sys.version_info[0]),
 ]
 
 

@@ -147,6 +147,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload, CPointer::SetString,
 void ExposeTools()
 {
 	class_<CPointer>("Pointer", init< optional<unsigned long> >())
+        .def(init<const CPointer&>())
 
 		// Class methods
 		.def("get_virtual_func",
@@ -426,6 +427,7 @@ void ExposeTools()
 	;
 
 	class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*>())
+        .def(init<const CFunction&>())
 
 		CLASS_METHOD_VARIADIC("__call__",
 			&CFunction::__call__,
