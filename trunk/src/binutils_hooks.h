@@ -40,14 +40,14 @@ using namespace boost::python;
 class CStackData
 {
 public:
-	CStackData(CHook* pHook);
+    CStackData(CHook* pHook);
 
-	object GetItem(unsigned int iIndex);
-	void   SetItem(unsigned int iIndex, object value);
+    object GetItem(unsigned int iIndex);
+    void   SetItem(unsigned int iIndex, object value);
 
 private:
-	CHook*                m_pHook;
-	std::map<int, object> m_mapCache;
+    CHook*                m_pHook;
+    std::map<int, object> m_mapCache;
 };
 
 

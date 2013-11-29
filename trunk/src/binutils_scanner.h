@@ -32,37 +32,37 @@
 // ============================================================================
 struct Signature_t
 {
-	unsigned char* m_szSignature;
-	unsigned long  m_ulAddr;
+    unsigned char* m_szSignature;
+    unsigned long  m_ulAddr;
 };
 
 
 class CBinaryFile
 {
 public:
-	CBinaryFile(unsigned long ulAddr, unsigned long ulSize);
+    CBinaryFile(unsigned long ulAddr, unsigned long ulSize);
 
-	CPointer* FindSignature(object szSignature);
-	CPointer* FindSymbol(char* szSymbol);
-	CPointer* FindPointer(object szSignature, int iOffset);
+    CPointer* FindSignature(object szSignature);
+    CPointer* FindSymbol(char* szSymbol);
+    CPointer* FindPointer(object szSignature, int iOffset);
 
-	unsigned long GetAddress() { return m_ulAddr; }
-	unsigned long GetSize() { return m_ulSize; }
+    unsigned long GetAddress() { return m_ulAddr; }
+    unsigned long GetSize() { return m_ulSize; }
 
 private:
-	unsigned long          m_ulAddr;
-	unsigned long          m_ulSize;
-	std::list<Signature_t> m_Signatures;
+    unsigned long          m_ulAddr;
+    unsigned long          m_ulSize;
+    std::list<Signature_t> m_Signatures;
 };
 
 
 class CBinaryManager
 {
 public:
-	CBinaryFile* FindBinary(char* szPath, bool bSrvCheck = true);
+    CBinaryFile* FindBinary(char* szPath, bool bSrvCheck = true);
 
 private:
-	std::list<CBinaryFile*> m_Binaries;
+    std::list<CBinaryFile*> m_Binaries;
 };
 
 // ============================================================================
