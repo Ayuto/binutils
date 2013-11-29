@@ -33,55 +33,55 @@ using namespace boost::python;
 // boost::python::object retval = CALL_PY_FUNC(PyObject*, ...);
 // ============================================================================
 #define CALL_PY_FUNC(pCallable, ...) \
-	PyObject_HasAttrString(pCallable, "__self__") ? call_method<object>(PyObject_GetAttrString(pCallable, "__self__"), extract<const char*>(PyObject_GetAttrString(pCallable, "__name__")), ##__VA_ARGS__) : call<object>(pCallable, ##__VA_ARGS__)
+    PyObject_HasAttrString(pCallable, "__self__") ? call_method<object>(PyObject_GetAttrString(pCallable, "__self__"), extract<const char*>(PyObject_GetAttrString(pCallable, "__name__")), ##__VA_ARGS__) : call<object>(pCallable, ##__VA_ARGS__)
 
 // ============================================================================
 // Surround boost python statements with this macro in order to handle
 // exceptions.
 // ============================================================================
 #define BEGIN_BOOST_PY() \
-	try {
+    try {
 
 #define END_BOOST_PY( ... ) \
-	} catch( ... ) { \
-		PyErr_Print(); \
-		PyErr_Clear(); \
-		return __VA_ARGS__; \
-	}
+    } catch( ... ) { \
+        PyErr_Print(); \
+        PyErr_Clear(); \
+        return __VA_ARGS__; \
+    }
 
 #define END_BOOST_PY_NORET( ... ) \
-	} catch( ... ) { \
-		PyErr_Print(); \
-		PyErr_Clear(); \
-	}
+    } catch( ... ) { \
+        PyErr_Print(); \
+        PyErr_Clear(); \
+    }
 
 // ============================================================================
 // Use this macro to expose a variadic function.
 // ============================================================================
 #define BOOST_VARIADIC_FUNCTION(name, function, ...) \
-	def("__" name, &function, ##__VA_ARGS__); \
-	exec("def " name "(*args): __" name "(args)", scope().attr("__dict__"))
+    def("__" name, &function, ##__VA_ARGS__); \
+    exec("def " name "(*args): __" name "(args)", scope().attr("__dict__"))
 
 // ============================================================================
 // Use this macro to expose a variadic class method. Don't forget to call
 // DEFINE_CLASS_METHOD_VARIADIC after that.
 // ============================================================================
 #define CLASS_METHOD_VARIADIC(name, method, ...) \
-	.def("__" name, method, ##__VA_ARGS__)
+    .def("__" name, method, ##__VA_ARGS__)
 
 // ============================================================================
 // Use this macro to define a variadic class method.
 // ============================================================================
 #define DEFINE_CLASS_METHOD_VARIADIC(classname, method) \
-	scope().attr(#classname).attr(#method) = eval("lambda self, *args: self.__" #method "(args)")
+    scope().attr(#classname).attr(#method) = eval("lambda self, *args: self.__" #method "(args)")
 
 // ============================================================================
 // Use this macro to raise a Python exception.
 // ============================================================================
 #define BOOST_RAISE_EXCEPTION( exceptionName, exceptionString ) \
     { \
-		PyErr_SetString(exceptionName, exceptionString); \
-		throw_error_already_set(); \
+        PyErr_SetString(exceptionName, exceptionString); \
+        throw_error_already_set(); \
     }
 
 // ============================================================================

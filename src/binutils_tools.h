@@ -39,20 +39,20 @@ using namespace boost::python;
 // ============================================================================
 inline int GetDynCallConvention(Convention_t eConv)
 {
-	switch (eConv)
-	{
-		case CONV_CDECL: return DC_CALL_C_DEFAULT;
-		case CONV_THISCALL:
-		#ifdef _WIN32
-			return DC_CALL_C_X86_WIN32_THIS_MS;
-		#else
-			return DC_CALL_C_X86_WIN32_THIS_GNU;
-		#endif
-		case CONV_STDCALL: return DC_CALL_C_X86_WIN32_STD;
-	}
+    switch (eConv)
+    {
+        case CONV_CDECL: return DC_CALL_C_DEFAULT;
+        case CONV_THISCALL:
+        #ifdef _WIN32
+            return DC_CALL_C_X86_WIN32_THIS_MS;
+        #else
+            return DC_CALL_C_X86_WIN32_THIS_GNU;
+        #endif
+        case CONV_STDCALL: return DC_CALL_C_X86_WIN32_STD;
+    }
 
-	// TODO: Throw exception
-	return 0;
+    // TODO: Throw exception
+    return 0;
 }
 
 // ============================================================================
@@ -63,38 +63,38 @@ class CFunction;
 class CPointer
 {
 public:
-	CPointer(unsigned long ulAddr = 0);
+    CPointer(unsigned long ulAddr = 0);
 
-	template<class T>
-	T Get(int iOffset = 0)
-	{
-		if (!IsValid())
-			BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
+    template<class T>
+    T Get(int iOffset = 0)
+    {
+        if (!IsValid())
+            BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
-		return *(T *) (m_ulAddr + iOffset);
-	}
+        return *(T *) (m_ulAddr + iOffset);
+    }
 
-	template<class T>
-	void Set(T value, int iOffset = 0)
-	{
-		if (!IsValid())
-			BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
+    template<class T>
+    void Set(T value, int iOffset = 0)
+    {
+        if (!IsValid())
+            BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
-		unsigned long newAddr = m_ulAddr + iOffset;
-		*(T *) newAddr = value;
-	}
+        unsigned long newAddr = m_ulAddr + iOffset;
+        *(T *) newAddr = value;
+    }
 
-	const char *        GetString(int iOffset = 0, bool bIsPtr = true);
-	void                SetString(char* szText, int iSize = 0, int iOffset = 0, bool bIsPtr = true);
-	CPointer*           GetPtr(int iOffset = 0);
-	void                SetPtr(object oPtr, int iOffset = 0);
+    const char *        GetString(int iOffset = 0, bool bIsPtr = true);
+    void                SetString(char* szText, int iSize = 0, int iOffset = 0, bool bIsPtr = true);
+    CPointer*           GetPtr(int iOffset = 0);
+    void                SetPtr(object oPtr, int iOffset = 0);
 
-	unsigned long       GetSize();
-	unsigned long       GetAddress() { return m_ulAddr; }
+    unsigned long       GetSize();
+    unsigned long       GetAddress() { return m_ulAddr; }
 
-	CPointer*           Add(int iValue);
-	CPointer*           Sub(int iValue);
-	bool                IsValid() { return m_ulAddr ? true: false; }
+    CPointer*           Add(int iValue);
+    CPointer*           Sub(int iValue);
+    bool                IsValid() { return m_ulAddr ? true: false; }
     bool                Equals(object oOther);
     
     bool                IsOverlapping(object oOther, unsigned long ulNumBytes);
@@ -104,37 +104,37 @@ public:
     void                Copy(object oDest, unsigned long ulNumBytes);
     void                Move(object oDest, unsigned long ulNumBytes);
 
-	CPointer*           GetVirtualFunc(int iIndex, bool bPlatformCheck = true);
+    CPointer*           GetVirtualFunc(int iIndex, bool bPlatformCheck = true);
 
-	void                Realloc(unsigned long ulSize);
-	void                Dealloc();
+    void                Realloc(unsigned long ulSize);
+    void                Dealloc();
 
-	CFunction*          MakeFunction(Convention_t eConv, char* szParams);
+    CFunction*          MakeFunction(Convention_t eConv, char* szParams);
 
 protected:
-	unsigned long m_ulAddr;
+    unsigned long m_ulAddr;
 };
 
 class CFunction: public CPointer
 {
 public:
-	CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams);
+    CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams);
 
-	object __call__(object args);
-	object CallTrampoline(object args);
+    object __call__(object args);
+    object CallTrampoline(object args);
 
-	void Hook(HookType_t eType, PyObject* pCallable);
-	void Unhook(HookType_t eType, PyObject* pCallable);
+    void Hook(HookType_t eType, PyObject* pCallable);
+    void Unhook(HookType_t eType, PyObject* pCallable);
 
-	void AddPreHook(PyObject* pCallable);
-	void AddPostHook(PyObject* pCallable);
+    void AddPreHook(PyObject* pCallable);
+    void AddPostHook(PyObject* pCallable);
 
-	void RemovePreHook(PyObject* pCallable);
-	void RemovePostHook(PyObject* pCallable);
+    void RemovePreHook(PyObject* pCallable);
+    void RemovePostHook(PyObject* pCallable);
 
 private:
-	char*     	 m_szParams;
-	Convention_t m_eConv;
+    char*        m_szParams;
+    Convention_t m_eConv;
 };
 
 
@@ -150,12 +150,12 @@ inline bool CheckClassname(object obj, char* szName)
 
 inline unsigned long ExtractPyPtr(object obj)
 {
-	if (CheckClassname(obj, "Pointer"))
-	{
-		CPointer* pPtr = extract<CPointer *>(obj);
-		return pPtr->GetAddress();
-	}
-	return extract<unsigned long>(obj);
+    if (CheckClassname(obj, "Pointer"))
+    {
+        CPointer* pPtr = extract<CPointer *>(obj);
+        return pPtr->GetAddress();
+    }
+    return extract<unsigned long>(obj);
 }
 
 inline CPointer* Alloc(unsigned long ulSize)
