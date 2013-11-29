@@ -87,7 +87,7 @@ public:
 	const char *        GetString(int iOffset = 0, bool bIsPtr = true);
 	void                SetString(char* szText, int iSize = 0, int iOffset = 0, bool bIsPtr = true);
 	CPointer*           GetPtr(int iOffset = 0);
-	void                SetPtr(CPointer* ptr, int iOffset = 0);
+	void                SetPtr(object oPtr, int iOffset = 0);
 
 	unsigned long       GetSize();
 	unsigned long       GetAddress() { return m_ulAddr; }
@@ -95,6 +95,14 @@ public:
 	CPointer*           Add(int iValue);
 	CPointer*           Sub(int iValue);
 	bool                IsValid() { return m_ulAddr ? true: false; }
+    bool                Equals(object oOther);
+    
+    bool                IsOverlapping(object oOther, unsigned long ulNumBytes);
+    CPointer*           SearchByte(int iValue, unsigned long ulNumBytes);
+    
+    int                 Compare(object oOther, unsigned long ulNum);
+    void                Copy(object oDest, unsigned long ulNumBytes);
+    void                Move(object oDest, unsigned long ulNumBytes);
 
 	CPointer*           GetVirtualFunc(int iIndex, bool bPlatformCheck = true);
 
@@ -135,9 +143,14 @@ private:
 // ============================================================================
 int GetError();
 
+inline bool CheckClassname(object obj, char* szName)
+{
+    return strcmp(extract<char *>(obj.attr("__class__").attr("__name__")), szName) == 0;
+}
+
 inline unsigned long ExtractPyPtr(object obj)
 {
-	if (strcmp(extract<char *>(obj.attr("__class__").attr("__name__")), "Pointer") == 0)
+	if (CheckClassname(obj, "Pointer"))
 	{
 		CPointer* pPtr = extract<CPointer *>(obj);
 		return pPtr->GetAddress();

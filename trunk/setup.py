@@ -80,6 +80,9 @@ COMPILER_FLAGS = [
 
     # Disable parentheses suggestions
     '-Wno-parentheses',
+    
+    # Disable "deprecated conversion from string..." warning
+    '-Wno-write-strings',
 ]
 
 

@@ -174,6 +174,38 @@ void ExposeTools()
 			args("convention", "params"),
 			manage_new_object_policy()
 		)
+        
+        .def("compare",
+            &CPointer::Compare,
+            "Compares the first <num> bytes of both pointers. Returns 0 if they are equal. A value greater than zero indicates that the first "\
+            "byte that does not match in both pointers has a greater value in <self> than in <other>. A value less than zero indicates the opposite.",
+            args("other", "num")
+        )
+        
+        .def("is_overlapping",
+            &CPointer::IsOverlapping,
+            "Returns True if the pointers are overlapping each other.",
+            args("destination", "num_bytes")
+        )
+        
+        .def("search_byte",
+            &CPointer::SearchByte,
+            "Searches within the first <num_bytes> of the memory block pointed by <self> for the first occurence of <value>.",
+            args("value", "num_bytes"),
+            manage_new_object_policy()
+        )
+        
+        .def("copy",
+            &CPointer::Copy,
+            "Copies <num_bytes> from <self> to the pointer <destination>. Overlapping is not allowed!",
+            args("destination", "num_bytes")
+        )
+        
+        .def("move",
+            &CPointer::Move,
+            "Copies <num_bytes> from <self> to the pointer <destination>. Overlapping is allowed!",
+            args("destination", "num_bytes")
+        )
 
 		// get_<type> methods
 		.def("get_bool",
@@ -413,6 +445,12 @@ void ExposeTools()
 			"Subtracts a value from the base address.",
 			manage_new_object_policy()
 		)
+        
+        .def("__eq__",
+            &CPointer::Equals,
+            "Returns True if both pointers point to the the same address.",
+            args("other")
+        )
 
 		// Properties
 		.add_property("addr",

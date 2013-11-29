@@ -65,6 +65,58 @@ CPointer* CPointer::Sub(int iValue)
 	return Add(-iValue);
 }
 
+bool CPointer::Equals(object oOther)
+{
+    return m_ulAddr == ExtractPyPtr(oOther);
+}
+
+int CPointer::Compare(object oOther, unsigned long ulNum)
+{
+    unsigned long ulOther = ExtractPyPtr(oOther);
+    if (!IsValid() || ulOther == 0)
+		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
+        
+    return memcmp((void *) m_ulAddr, (void *) ulOther, ulNum);
+}
+
+bool CPointer::IsOverlapping(object oOther, unsigned long ulNumBytes)
+{
+    unsigned long ulOther = ExtractPyPtr(oOther);
+    return (m_ulAddr <= ulOther < m_ulAddr + ulNumBytes) || (ulOther <= m_ulAddr < ulOther + ulNumBytes);
+}
+
+CPointer* CPointer::SearchByte(int iValue, unsigned long ulNumBytes)
+{
+	if (!IsValid())
+		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
+        
+    if (!(0 <= iValue <= 255))
+		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Only values between 0 and 255 are allowed!")
+        
+    return new CPointer((unsigned long) memchr((void *) m_ulAddr, iValue, ulNumBytes));
+}
+
+void CPointer::Copy(object oDest, unsigned long ulNumBytes)
+{
+    unsigned long ulDest = ExtractPyPtr(oDest);
+    if (!IsValid() || ulDest == 0)
+		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
+        
+    if (IsOverlapping(oDest, ulNumBytes))
+		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointers are overlapping!")
+        
+    memcpy((void *) ulDest, (void *) m_ulAddr, ulNumBytes);
+}
+
+void CPointer::Move(object oDest, unsigned long ulNumBytes)
+{
+    unsigned long ulDest = ExtractPyPtr(oDest);
+    if (!IsValid() || ulDest == 0)
+		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
+        
+    memmove((void *) ulDest, (void *) m_ulAddr, ulNumBytes);
+}
+
 const char * CPointer::GetString(int iOffset /* = 0 */, bool bIsPtr /* = true */)
 {
 	if (!IsValid())
@@ -105,12 +157,12 @@ CPointer* CPointer::GetPtr(int iOffset /* = 0 */)
 	return new CPointer(*(unsigned long *) (m_ulAddr + iOffset));
 }
 
-void CPointer::SetPtr(CPointer* ptr, int iOffset /* = 0 */)
+void CPointer::SetPtr(object oPtr, int iOffset /* = 0 */)
 {
 	if (!IsValid())
 		BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
-	*(unsigned long *) m_ulAddr = ptr->GetAddress();
+	*(unsigned long *) m_ulAddr = ExtractPyPtr(oPtr);
 }
 
 unsigned long CPointer::GetSize()
