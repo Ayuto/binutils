@@ -188,10 +188,10 @@ void ExposeTools()
             args("destination", "num_bytes")
         )
         
-        .def("search_byte",
-            &CPointer::SearchByte,
-            "Searches within the first <num_bytes> of the memory block pointed by <self> for the first occurence of <value>.",
-            args("value", "num_bytes"),
+        .def("search_bytes",
+            &CPointer::SearchBytes,
+            "Searches within the first <num_bytes> of this memory block for the first occurence of <bytes> and returns a pointer it.",
+            args("bytes", "num_bytes"),
             manage_new_object_policy()
         )
         

@@ -98,7 +98,7 @@ public:
     bool                Equals(object oOther);
     
     bool                IsOverlapping(object oOther, unsigned long ulNumBytes);
-    CPointer*           SearchByte(int iValue, unsigned long ulNumBytes);
+    CPointer*           SearchBytes(object oBytes, unsigned long ulNumBytes);
     
     int                 Compare(object oOther, unsigned long ulNum);
     void                Copy(object oDest, unsigned long ulNumBytes);
@@ -161,6 +161,22 @@ inline unsigned long ExtractPyPtr(object obj)
 inline CPointer* Alloc(unsigned long ulSize)
 {
     return new CPointer((unsigned long) malloc(ulSize));
+}
+
+inline unsigned char* GetByteRepr(object obj)
+{
+    unsigned char* byterepr = NULL;
+#if PYTHON_VERSION == 3
+    // This is required because there's no straight way to get a string from a python
+    // object from boost (without using the stl).
+    PyArg_Parse(obj.ptr(), "y", &byterepr);
+    if (!byterepr)
+        return NULL;
+#else
+    char* tempstr = extract<char *>(obj);
+    byterepr = (unsigned char *) tempstr;
+#endif
+    return byterepr;
 }
 
 #endif // _BINUTILS_TOOLS_H

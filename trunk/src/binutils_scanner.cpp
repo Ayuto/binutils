@@ -46,17 +46,9 @@ CBinaryFile::CBinaryFile(unsigned long ulAddr, unsigned long ulSize)
 
 CPointer* CBinaryFile::FindSignature(object szSignature)
 {
-#if PYTHON_VERSION == 3
-    // This is required because there's no straight way to get a string from a python
-    // object from boost (without using the stl).
-    unsigned char* sigstr = NULL;
-    PyArg_Parse(szSignature.ptr(), "y", &sigstr);
+    unsigned char* sigstr = GetByteRepr(szSignature);
     if (!sigstr)
         return new CPointer();
-#else
-    char* tempstr = extract<char*>(szSignature);
-    unsigned char* sigstr = (unsigned char*) tempstr;
-#endif
 
     // Search for a cached signature
     for (std::list<Signature_t>::iterator iter=m_Signatures.begin(); iter != m_Signatures.end(); iter++)
