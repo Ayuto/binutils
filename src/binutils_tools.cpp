@@ -85,15 +85,37 @@ bool CPointer::IsOverlapping(object oOther, unsigned long ulNumBytes)
     return (m_ulAddr <= ulOther < m_ulAddr + ulNumBytes) || (ulOther <= m_ulAddr < ulOther + ulNumBytes);
 }
 
-CPointer* CPointer::SearchByte(int iValue, unsigned long ulNumBytes)
+CPointer* CPointer::SearchBytes(object oBytes, unsigned long ulNumBytes)
 {
     if (!IsValid())
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
         
-    if (!(0 <= iValue <= 255))
-        BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Only values between 0 and 255 are allowed!")
+    unsigned long iByteLen = len(oBytes);
+    if (ulNumBytes < iByteLen)
+        BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Search range is too small.")
+    
+    unsigned char* base  = (unsigned char *) m_ulAddr;
+    unsigned char* end   = (unsigned char *) (m_ulAddr + ulNumBytes - (iByteLen - 1));
+    unsigned char* bytes = GetByteRepr(oBytes);
+    
+    while (base < end)
+    {
+        unsigned long i = 0;
+        for(; i < iByteLen; i++)
+        {
+            if (base[i] == '\x2A')
+                continue;
+                
+            if (bytes[i] != base[i])
+                break;
+        }
         
-    return new CPointer((unsigned long) memchr((void *) m_ulAddr, iValue, ulNumBytes));
+        if (i == iByteLen)
+            return new CPointer((unsigned long) base);
+            
+        base++;
+    }
+    return NULL;
 }
 
 void CPointer::Copy(object oDest, unsigned long ulNumBytes)
