@@ -4,6 +4,8 @@
 # Python
 import os
 import sys
+import shutil
+import time
 
 from distutils.core import Extension
 from distutils.core import setup
@@ -109,20 +111,48 @@ MACROS = [
 
 
 # =============================================================================
-# >> SETUP
+# >> MAIN
 # =============================================================================
-setup(
-    name='binutils',
-    ext_modules=[
-        Extension(
-            'binutils',
-            sources=SOURCES,
-            library_dirs=LIBRARY_DIRS,
-            libraries=LIBRARIES,
-            include_dirs=INCLUDE_DIRS,
-            extra_compile_args=COMPILER_FLAGS,
-            extra_link_args=LINKER_FLAGS,
-            define_macros=MACROS
-        ),
-    ]
-)
+def main():
+    # Compile the binary
+    print('Compiling the binary...')
+    setup(
+        name='binutils',
+        ext_modules=[
+            Extension(
+                'binutils',
+                sources=SOURCES,
+                library_dirs=LIBRARY_DIRS,
+                libraries=LIBRARIES,
+                include_dirs=INCLUDE_DIRS,
+                extra_compile_args=COMPILER_FLAGS,
+                extra_link_args=LINKER_FLAGS,
+                define_macros=MACROS
+            ),
+        ]
+    )
+    
+    # Remove possible garbage of last build
+    print('Removing possible garbage of last build...')
+    shutil.rmtree('binutils', True)
+    
+    # Copy the binutils package to the current directory
+    print('Copying ../src/binutils/ to ../binutils/ ...')
+    shutil.copytree('src/binutils', 'binutils')
+    
+    # Move the new compiled binary
+    name = 'binutils.' + ('pyd' if os.name == 'nt' else 'so')
+    
+    print('Moving %s to ../binutils/ ...'% name)
+    shutil.move(
+        name,
+        'binutils/' + name
+    )
+    
+    # Remove the build directory
+    print('Removing ../build/ ...')
+    shutil.rmtree('build', True)
+    
+now = time.time()
+main()
+print('Time elapsed: %.02f seconds.'% (time.time() - now))
