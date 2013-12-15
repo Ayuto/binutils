@@ -109,6 +109,7 @@ void ExposeScanner()
 // ============================================================================
 // Overloads
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_virtual_func_overload, CPointer::GetVirtualFunc, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_function_overload, CPointer::MakeFunction, 2, 3)
 
 // get_<type> methods
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_bool_overload, CPointer::Get<bool>, 0, 1)
@@ -167,12 +168,12 @@ void ExposeTools()
             &CPointer::Dealloc,
             "Deallocates a memory block."
         )
-
+        
         .def("make_function",
             &CPointer::MakeFunction,
-            "Creates a new Function instance.",
-            args("convention", "params"),
-            manage_new_object_policy()
+            make_function_overload(
+                args("convention", "params", "return_type"),
+                "Creates a new Function instance.")[manage_new_object_policy()]
         )
         
         .def("compare",
@@ -464,7 +465,7 @@ void ExposeTools()
         )
     ;
 
-    class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*>())
+    class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*, optional<PyObject*> >())
         .def(init<const CFunction&>())
 
         CLASS_METHOD_VARIADIC("__call__",

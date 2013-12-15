@@ -220,22 +220,23 @@ void CPointer::Dealloc()
     m_ulAddr = 0;
 }
 
-CFunction* CPointer::MakeFunction(Convention_t eConv, char* szParams)
+CFunction* CPointer::MakeFunction(Convention_t eConv, char* szParams, PyObject* pReturnType /* = NULL */)
 {
     if (!IsValid())
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
-    return new CFunction(m_ulAddr, eConv, szParams);
+    return new CFunction(m_ulAddr, eConv, szParams, pReturnType);
 }
 
 // ============================================================================
 // CFunction class
 // ============================================================================
-CFunction::CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams)
+CFunction::CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, PyObject* pReturnType /* = NULL */)
 {
     m_ulAddr = ulAddr;
     m_eConv = eConv;
     m_szParams = szParams;
+    m_oReturnType = pReturnType ? object(handle<>(pReturnType)) : eval("lambda x: x");
 }
 
 object CFunction::__call__(object args)
@@ -301,7 +302,7 @@ object CFunction::__call__(object args)
         case DC_SIGCHAR_ULONGLONG: return object((unsigned long long) dcCallLongLong(g_pCallVM, m_ulAddr));
         case DC_SIGCHAR_FLOAT:     return object(dcCallFloat(g_pCallVM, m_ulAddr));
         case DC_SIGCHAR_DOUBLE:    return object(dcCallDouble(g_pCallVM, m_ulAddr));
-        case DC_SIGCHAR_POINTER:   return object(CPointer(dcCallPointer(g_pCallVM, m_ulAddr)));
+        case DC_SIGCHAR_POINTER:   return m_oReturnType(CPointer(dcCallPointer(g_pCallVM, m_ulAddr)));
         case DC_SIGCHAR_STRING:    return object((const char *) dcCallPointer(g_pCallVM, m_ulAddr));
         default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown return type.")
     }
@@ -317,7 +318,7 @@ object CFunction::CallTrampoline(object args)
     if (!pHook)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function was not hooked.")
 
-    return CFunction((unsigned long) pHook->m_pTrampoline, m_eConv, m_szParams).__call__(args);
+    return CFunction((unsigned long) pHook->m_pTrampoline, m_eConv, m_szParams, m_oReturnType.ptr()).__call__(args);
 }
 
 void CFunction::Hook(DynamicHooks::HookType_t eType, PyObject* pCallable)
