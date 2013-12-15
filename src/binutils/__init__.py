@@ -58,10 +58,15 @@ class Pipe(dict):
 
             # Raise an error here. Maybe the user wanted to use a symbol, but
             # accidentally added a space
-            if not bool(func_ptr):
+            if not func_ptr:
                 raise ValueError('Could not find signature "%s".'% repr(sig))
         else:
             func_ptr = binary[identifier]
+            
+            # Same here. Maybe the user wanted to use a signature, but forgot
+            # to add spaces
+            if not func_ptr:
+                raise ValueError('Could not find symbol "%s".'% identifier)
 
         # Return a new Function object
         return func_ptr.make_function(

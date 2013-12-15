@@ -109,7 +109,7 @@ public:
     void                Realloc(unsigned long ulSize);
     void                Dealloc();
 
-    CFunction*          MakeFunction(Convention_t eConv, char* szParams);
+    CFunction*          MakeFunction(Convention_t eConv, char* szParams, PyObject* pReturnType = NULL);
 
 protected:
     unsigned long m_ulAddr;
@@ -118,7 +118,7 @@ protected:
 class CFunction: public CPointer
 {
 public:
-    CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams);
+    CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, PyObject* pReturnType = NULL);
 
     object __call__(object args);
     object CallTrampoline(object args);
@@ -135,6 +135,7 @@ public:
 private:
     char*        m_szParams;
     Convention_t m_eConv;
+    object       m_oReturnType;
 };
 
 
