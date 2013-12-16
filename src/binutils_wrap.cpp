@@ -108,8 +108,8 @@ void ExposeScanner()
 // >> Expose CPointer
 // ============================================================================
 // Overloads
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_virtual_func_overload, CPointer::GetVirtualFunc, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_function_overload, CPointer::MakeFunction, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_virtual_function_overload, CPointer::MakeVirtualFunction, 3, 4)
 
 // get_<type> methods
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_bool_overload, CPointer::Get<bool>, 0, 1)
@@ -147,15 +147,16 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload, CPointer::SetString,
 
 void ExposeTools()
 {
+    // CPointer class
     class_<CPointer>("Pointer", init< optional<unsigned long> >())
         .def(init<const CPointer&>())
 
         // Class methods
         .def("get_virtual_func",
             &CPointer::GetVirtualFunc,
-            get_virtual_func_overload(
-                args("index", "platform_check"),
-                "Returns the address (as a CPointer instance) of a virtual function at the given index.")[manage_new_object_policy()]
+            "Returns the address (as a CPointer instance) of a virtual function at the given index.",
+            args("index"),
+            manage_new_object_policy()
         )
 
         .def("realloc",
@@ -173,7 +174,14 @@ void ExposeTools()
             &CPointer::MakeFunction,
             make_function_overload(
                 args("convention", "params", "return_type"),
-                "Creates a new Function instance.")[manage_new_object_policy()]
+                "Creates a new Function object.")[manage_new_object_policy()]
+        )
+        
+        .def("make_virtual_function",
+            &CPointer::MakeVirtualFunction,
+            make_virtual_function_overload(
+                args("index", "convention", "params", "return_type"),
+                "Creates a new Function object.")[manage_new_object_policy()]
         )
         
         .def("compare",
@@ -465,6 +473,8 @@ void ExposeTools()
         )
     ;
 
+    
+    // CFunction class
     class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*, optional<PyObject*> >())
         .def(init<const CFunction&>())
 
