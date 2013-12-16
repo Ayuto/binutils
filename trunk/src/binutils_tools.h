@@ -60,6 +60,7 @@ inline int GetDynCallConvention(Convention_t eConv)
 // ============================================================================
 class CFunction;
 
+// CPointer class
 class CPointer
 {
 public:
@@ -104,21 +105,24 @@ public:
     void                Copy(object oDest, unsigned long ulNumBytes);
     void                Move(object oDest, unsigned long ulNumBytes);
 
-    CPointer*           GetVirtualFunc(int iIndex, bool bPlatformCheck = true);
+    CPointer*           GetVirtualFunc(int iIndex);
 
     void                Realloc(unsigned long ulSize);
     void                Dealloc();
 
-    CFunction*          MakeFunction(Convention_t eConv, char* szParams, PyObject* pReturnType = NULL);
+    CFunction*          MakeFunction(Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
+    CFunction*          MakeVirtualFunction(int iIndex, Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
 
 protected:
     unsigned long m_ulAddr;
 };
 
+
+// CFunction class
 class CFunction: public CPointer
 {
 public:
-    CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, PyObject* pReturnType = NULL);
+    CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
 
     object __call__(object args);
     object CallTrampoline(object args);
@@ -135,7 +139,7 @@ public:
 private:
     char*        m_szParams;
     Convention_t m_eConv;
-    object       m_oReturnType;
+    object       m_oConverter;
 };
 
 
