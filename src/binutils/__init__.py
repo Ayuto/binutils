@@ -30,9 +30,7 @@ ATTR_READ_WRITE = ATTR_READ | ATTR_WRITE
 # =============================================================================
 class Pipe(dict):
     '''
-    This class is used to create a pipe to normal functions and methods. If
-    you wish to add methods, virtual functions and/or attributes to a pointer,
-    use the TypePipe.
+    This class is used to create a pipe to normal functions and methods.
 
     LAYOUT:
     [<function name>]
@@ -88,8 +86,8 @@ class Pipe(dict):
 
 class CustomType(Pointer):
     '''
-    This is the base class for custom type. You should inherit from this class
-    if you want to create a new custom type.
+    This is the base class for a custom type. You should inherit from this
+    class if you want to create a new custom type.
     '''
 
     def __getattribute__(self, attr):
@@ -118,7 +116,7 @@ class TypeManager(dict):
 
     def __init__(self):
         '''
-        Sets the default converter.
+        Initializes the manager by setting the default converter.
         '''
 
         # Default converter -- do nothing
@@ -165,6 +163,7 @@ class TypeManager(dict):
         if override and name in self:
             raise NameError('Cannot create type. "%s" already exists.'% name)
 
+        # TODO: Restrict to Pointer?
         if not issubclass(cls, CustomType):
             raise ValueError('Given class is not a subclass of CustomType.')
 
@@ -179,7 +178,7 @@ class TypeManager(dict):
 
         return (self.attribute, self.function, self.virtual_function)
 
-    def attribute(self, strtype, offset, str_is_ptr=False, str_size=0, flags=ATTR_READ_WRITE, converter_name=None):
+    def attribute(self, strtype, offset, str_is_ptr=False, str_size=0, flags=ATTR_READ_WRITE, converter_name=None, doc=None):
         '''
         Adds an attribute to a class.
         '''
@@ -205,30 +204,36 @@ class TypeManager(dict):
 
         # Return the proper property object depending on the flags
         if flags & ATTR_READ_WRITE:
-            return property(fget, fset)
+            return property(fget, fset, doc=doc)
         elif flags & ATTR_READ:
-            return property(fget)
+            return property(fget, doc=doc)
         elif flags & ATTR_WRITE:
-            return property(fset=fset)
+            return property(fset=fset, doc=doc)
 
         # Raise an error as we cannot read or write the attribute
         raise AttributeError('Attribute is not readable or writeable.')
 
-    def function(self, binary, identifier, convention, parameters, converter_name=None):
+    def function(self, binary, identifier, convention, parameters, converter_name=None, doc=None):
         '''
         Adds a function to a class.
         '''
 
-        return _EvalFunction(make_function(binary, identifier, convention,
+        func = _EvalFunction(make_function(binary, identifier, convention,
             parameters, self.create_converter(converter_name)))
+            
+        func.__doc__ = doc
+        return func
 
-    def virtual_function(self, index, convention, parameters, converter_name=None):
+    def virtual_function(self, index, convention, parameters, converter_name=None, doc=None):
         '''
         Adds a virtual function to a class.
         '''
 
-        return _EvalVirtualFunction(index, convention, parameters,
+        func = _EvalVirtualFunction(index, convention, parameters,
             self.create_converter(converter_name))
+            
+        func.__doc__ = doc
+        return func
 
     def create_converter(self, name):
         '''
@@ -254,7 +259,9 @@ class _EvalFunction(Function):
         Returns a new Thiscall object.
         '''
 
-        return Thiscall(self, this)
+        func = Thiscall(self, this)
+        func.__doc__ = self.__doc__
+        return func
 
     @property
     def is_virtual(self):
@@ -291,7 +298,7 @@ class _EvalVirtualFunction(object):
         Step 2.
         '''
 
-        return Thiscall(
+        func = Thiscall(
             this.make_virtual_function(
                 self.index,
                 self.convention,
@@ -300,6 +307,8 @@ class _EvalVirtualFunction(object):
             ),
             this
         )
+        func.__doc__ = self.__doc__
+        return func
 
     @property
     def is_virtual(self):
