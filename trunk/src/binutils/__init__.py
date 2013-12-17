@@ -24,6 +24,25 @@ ATTR_READ       = 1 << 0
 ATTR_WRITE      = 1 << 1
 ATTR_READ_WRITE = ATTR_READ | ATTR_WRITE
 
+# A tuple of native types
+NATIVE_TYPES = (
+    'bool',
+    'char',
+    'uchar',
+    'short',
+    'ushort',
+    'int',
+    'uint',
+    'long',
+    'ulong',
+    'long_long',
+    'ulong_long',
+    'float',
+    'double',
+    'ptr',
+    'string'
+)
+
 
 # =============================================================================
 # >> CLASSES
@@ -187,17 +206,21 @@ class TypeManager(dict):
 
         return (self.attribute, self.function, self.virtual_function)
 
-    def attribute(self, strtype, offset=0, str_is_ptr=True, str_size=0,
+    def attribute(self, str_type, offset=0, str_is_ptr=True, str_size=0,
             flags=ATTR_READ_WRITE, converter_name=None, doc=None):
         '''
         Adds an attribute to a class.
         '''
+        
+        if str_type not in NATIVE_TYPES:
+            converter_name = str_type
+            str_type = 'ptr'
 
         # Getter method
         def fget(ptr_self):
             result = None
-            func = getattr(ptr_self, 'get_' + strtype)
-            if strtype == 'string':
+            func = getattr(ptr_self, 'get_' + str_type)
+            if str_type == 'string':
                 result = func(offset, str_is_ptr)
             else:
                 result = func(offset)
@@ -206,8 +229,8 @@ class TypeManager(dict):
 
         # Setter method
         def fset(ptr_self, value):
-            func = getattr(ptr_self, 'set_' + strtype)
-            if strtype == 'string':
+            func = getattr(ptr_self, 'set_' + str_type)
+            if str_type == 'string':
                 func(value, str_size, offset, str_is_ptr)
             else:
                 func(value, offset)
@@ -347,7 +370,7 @@ class Thiscall(Function):
         '''
 
         super(Thiscall, self).__init__(func)
-        self.this = int(this)
+        self.this = this
 
     def __call__(self, *args):
         '''
