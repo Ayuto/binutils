@@ -68,12 +68,20 @@ class Pipe(dict):
 
     def __getattr__(self, attr):
         options = self[attr]
-        return make_function(
+
+        # Is it already a function?
+        if isinstance(options, Function):
+            return options
+
+        # Create the function and override the information
+        func = self[attr] = make_function(
             options[KEY_BINARY],
             options[KEY_IDENTIFIER],
             getattr(Convention, options[KEY_CONVENTION]),
             options[KEY_PARAMETERS]
         )
+
+        return func
 
     def add_function(self, name, binary, identifier, convention, parameters):
         self[name] = {
@@ -147,7 +155,8 @@ class TypeManager(dict):
 
     def create_type_from_file(self, name, files, override=False):
         '''
-        Same as "create_type()", but creates a type from the specified file(s).
+        Same as "create_type()", but creates a type from the specified
+        file(s).
         '''
 
         pass
@@ -178,7 +187,8 @@ class TypeManager(dict):
 
         return (self.attribute, self.function, self.virtual_function)
 
-    def attribute(self, strtype, offset, str_is_ptr=False, str_size=0, flags=ATTR_READ_WRITE, converter_name=None, doc=None):
+    def attribute(self, strtype, offset=0, str_is_ptr=True, str_size=0,
+            flags=ATTR_READ_WRITE, converter_name=None, doc=None):
         '''
         Adds an attribute to a class.
         '''
@@ -213,25 +223,28 @@ class TypeManager(dict):
         # Raise an error as we cannot read or write the attribute
         raise AttributeError('Attribute is not readable or writeable.')
 
-    def function(self, binary, identifier, convention, parameters, converter_name=None, doc=None):
+    def function(self, binary, identifier, parameters,
+            convention=Convention.THISCALL, srv_check=True,
+            converter_name=None, doc=None):
         '''
         Adds a function to a class.
         '''
 
         func = _EvalFunction(make_function(binary, identifier, convention,
-            parameters, self.create_converter(converter_name)))
-            
+            parameters, srv_check, self.create_converter(converter_name)))
+
         func.__doc__ = doc
         return func
 
-    def virtual_function(self, index, convention, parameters, converter_name=None, doc=None):
+    def virtual_function(self, index, parameters,
+            convention=Convention.THISCALL, converter_name=None, doc=None):
         '''
         Adds a virtual function to a class.
         '''
 
         func = _EvalVirtualFunction(index, convention, parameters,
             self.create_converter(converter_name))
-            
+
         func.__doc__ = doc
         return func
 
@@ -242,8 +255,8 @@ class TypeManager(dict):
         '''
 
         return lambda x: self[name](x)
-        
-# Create a manager that can be used by all libraries
+
+# Create a manager that can be used by all programs
 type_manager = TypeManager()
 
 
@@ -254,6 +267,10 @@ class _EvalFunction(Function):
     This is a wrapper for the Thiscall constructor.
     '''
 
+    def __init__(self, func):
+        super(_EvalFunction, self).__init__(func)
+        self.is_virtual = False
+
     def __call__(self, this):
         '''
         Returns a new Thiscall object.
@@ -262,14 +279,6 @@ class _EvalFunction(Function):
         func = Thiscall(self, this)
         func.__doc__ = self.__doc__
         return func
-
-    @property
-    def is_virtual(self):
-        '''
-        Returns always False as this function is not virtual.
-        '''
-
-        return False
 
 
 class _EvalVirtualFunction(object):
@@ -288,10 +297,11 @@ class _EvalVirtualFunction(object):
         Step 1.
         '''
 
-        self.index = index
+        self.index      = index
         self.convention = convention
         self.parameters = parameters
-        self.converter = converter
+        self.converter  = converter
+        self.is_virtual = True
 
     def __call__(self, this):
         '''
@@ -309,14 +319,6 @@ class _EvalVirtualFunction(object):
         )
         func.__doc__ = self.__doc__
         return func
-
-    @property
-    def is_virtual(self):
-        '''
-        Returns always True as this function is virtual.
-        '''
-
-        return True
 
     def __getattr__(self, attr):
         '''
@@ -365,12 +367,13 @@ class Thiscall(Function):
 # =============================================================================
 # >> FUNCTIONS
 # =============================================================================
-def make_function(binary, identifier, convention, parameters, converter=lambda x: x):
+def make_function(binary, identifier, convention, parameters, srv_check=True,
+        converter=lambda x: x):
     '''
     This is a shortcut for creating new functions.
     '''
 
-    binary = binutils.find_binary(binary)
+    binary = binutils.find_binary(binary, srv_check)
 
     # Is it a signature?
     if os.name == 'nt' and ' ' in identifier:
