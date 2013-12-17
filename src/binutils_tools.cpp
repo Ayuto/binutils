@@ -162,7 +162,7 @@ void CPointer::SetString(char* szText, int iSize /* = 0 */, int iOffset /* = 0 *
             BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Unable to retrieve size of address.")
     }
 
-    if ((int ) strlen(szText) > iSize)
+    if ((int ) strlen(szText) >= iSize)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "String exceeds size of memory block.")
 
     if (bIsPtr)
