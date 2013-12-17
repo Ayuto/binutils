@@ -113,7 +113,7 @@ public:
     CFunction*          MakeFunction(Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
     CFunction*          MakeVirtualFunction(int iIndex, Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
 
-protected:
+public:
     unsigned long m_ulAddr;
 };
 
@@ -136,7 +136,7 @@ public:
     void RemovePreHook(PyObject* pCallable);
     void RemovePostHook(PyObject* pCallable);
 
-private:
+public:
     char*        m_szParams;
     Convention_t m_eConv;
     object       m_oConverter;

@@ -460,13 +460,14 @@ void ExposeTools()
             "Returns True if both pointers point to the the same address.",
             args("other")
         )
-
-        // Properties
-        .add_property("addr",
-            &CPointer::GetAddress,
-            "Returns the address of this memory block."
+        
+        // Attributes
+        .def_readwrite("address",
+            &CPointer::m_ulAddr,
+           "Returns the address of this memory block."
         )
 
+        // Properties
         .add_property("size",
             &CPointer::GetSize,
             "Returns the size of this memory block."
@@ -478,6 +479,7 @@ void ExposeTools()
     class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*, optional<PyObject*> >())
         .def(init<const CFunction&>())
 
+        // Class methods
         CLASS_METHOD_VARIADIC("__call__",
             &CFunction::__call__,
             "Calls the function dynamically."
@@ -506,6 +508,22 @@ void ExposeTools()
         .def("remove_post_hook",
             &CFunction::RemovePostHook,
             "Removes a post-hook callback."
+        )
+        
+        // Attributes
+        .def_readwrite("parameters",
+            &CFunction::m_szParams,
+            "Returns the parameter string."
+        )
+        
+        .def_readwrite("convention",
+            &CFunction::m_eConv,
+            "Returns the calling convention."
+        )
+        
+        .def_readwrite("converter",
+            &CFunction::m_oConverter,
+            "Returns the converter."
         )
     ;
 
