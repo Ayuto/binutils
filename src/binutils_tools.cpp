@@ -184,7 +184,7 @@ void CPointer::SetPtr(object oPtr, int iOffset /* = 0 */)
     if (!IsValid())
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
-    *(unsigned long *) m_ulAddr = ExtractPyPtr(oPtr);
+    *(unsigned long *) (m_ulAddr + iOffset) = ExtractPyPtr(oPtr);
 }
 
 unsigned long CPointer::GetSize()
