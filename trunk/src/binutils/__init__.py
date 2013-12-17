@@ -166,7 +166,7 @@ class TypeManager(dict):
         The type has to be a sub-class of Pointer.
         '''
 
-        if override and name in self:
+        if not override and name in self:
             raise NameError('Cannot create type. "%s" already exists.'% name)
 
         if not issubclass(cls, Pointer):
