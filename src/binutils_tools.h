@@ -97,10 +97,10 @@ public:
     CPointer*           Sub(int iValue);
     bool                IsValid() { return m_ulAddr ? true: false; }
     bool                Equals(object oOther);
-    
+
     bool                IsOverlapping(object oOther, unsigned long ulNumBytes);
     CPointer*           SearchBytes(object oBytes, unsigned long ulNumBytes);
-    
+
     int                 Compare(object oOther, unsigned long ulNum);
     void                Copy(object oDest, unsigned long ulNumBytes);
     void                Move(object oDest, unsigned long ulNumBytes);
@@ -148,18 +148,20 @@ private:
 // ============================================================================
 int GetError();
 
-inline bool CheckClassname(object obj, char* szName)
-{
-    return strcmp(extract<char *>(obj.attr("__class__").attr("__name__")), szName) == 0;
-}
-
 inline unsigned long ExtractPyPtr(object obj)
 {
-    if (CheckClassname(obj, "Pointer"))
+    // Try to get a CPointer representation at first
+    try
     {
         CPointer* pPtr = extract<CPointer *>(obj);
         return pPtr->GetAddress();
     }
+    catch(...)
+    {
+        PyErr_Clear();
+    }
+
+    // If that fails, try to extract an unsigned long
     return extract<unsigned long>(obj);
 }
 
