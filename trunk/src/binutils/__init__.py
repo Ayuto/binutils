@@ -111,28 +111,6 @@ class Pipe(dict):
         }
 
 
-class CustomType(Pointer):
-    '''
-    This is the base class for a custom type. You should inherit from this
-    class if you want to create a new custom type.
-    '''
-
-    def __getattribute__(self, attr):
-        '''
-        This function works like a hook. Inherited functions and attributes
-        are returned as usual, but added functions and virtual functions are
-        treated with an extra step.
-        '''
-
-        result = super(CustomType, self).__getattribute__(attr)
-
-        # If it's not a function, we can return here
-        if not isinstance(result, (_EvalVirtualFunction, _EvalFunction)):
-            return result
-
-        return result(self)
-
-
 class TypeManager(dict):
     '''
     The TypeManager is an extremely powerful class, which gives you the
@@ -168,7 +146,7 @@ class TypeManager(dict):
 
         return self.add_type(
             name,
-            type(name, (CustomType,), cls_dict),
+            type(name, (Pointer,), cls_dict),
             override
         )
 
@@ -185,15 +163,14 @@ class TypeManager(dict):
         Adds the given type to the manager. Raises an error of the type
         already exists unless <override> was set to True.
 
-        The type has to be a sub-class of CustomType.
+        The type has to be a sub-class of Pointer.
         '''
 
         if override and name in self:
             raise NameError('Cannot create type. "%s" already exists.'% name)
 
-        # TODO: Restrict to Pointer?
-        if not issubclass(cls, CustomType):
-            raise ValueError('Given class is not a subclass of CustomType.')
+        if not issubclass(cls, Pointer):
+            raise ValueError('Given class is not a subclass of Pointer.')
 
         self[name] = cls
         return cls
@@ -294,7 +271,7 @@ class _EvalFunction(Function):
         super(_EvalFunction, self).__init__(func)
         self.is_virtual = False
 
-    def __call__(self, this):
+    def __get__(self, this, cls):
         '''
         Returns a new Thiscall object.
         '''
@@ -326,7 +303,7 @@ class _EvalVirtualFunction(object):
         self.converter  = converter
         self.is_virtual = True
 
-    def __call__(self, this):
+    def __get__(self, this, cls):
         '''
         Step 2.
         '''
