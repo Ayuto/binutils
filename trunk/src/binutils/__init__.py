@@ -138,7 +138,7 @@ class TypeManager(dict):
 
         self[None] = converter
 
-    def create_type(self, name, cls_dict, override=False):
+    def create_type(self, name, cls_dict, size=None, override=False):
         '''
         Creates a new type. If the type already exists, an error will be
         raised unless <override> was set to True.
@@ -147,6 +147,7 @@ class TypeManager(dict):
         return self.add_type(
             name,
             type(name, (Pointer,), cls_dict),
+            size,
             override
         )
 
@@ -158,12 +159,20 @@ class TypeManager(dict):
 
         pass
 
-    def add_type(self, name, cls, override=False):
+    def add_type(self, name, cls, size=None, override=False):
         '''
         Adds the given type to the manager. Raises an error of the type
         already exists unless <override> was set to True.
 
         The type has to be a sub-class of Pointer.
+        
+        Be careful when you implement an __init__ function. It requires the
+        the following signature:
+        __init__(self, ptr):
+        
+        This function overrides your function with an __init__ function that
+        will eventually allocate space (if <ptr> is None and <size> was
+        given).
         '''
 
         if not override and name in self:
@@ -171,7 +180,29 @@ class TypeManager(dict):
 
         if not issubclass(cls, Pointer):
             raise ValueError('Given class is not a subclass of Pointer.')
-
+            
+        # Save the old __init__
+        old_init = cls.__init__ if '__init__' in cls.__dict__ else \
+            lambda self, ptr: None
+            
+        def __init__(ptr_self, ptr=None):
+            # Call the old __init__ function
+            old_init(ptr_self, ptr)
+            
+            # Do we want to wrap a pointer?
+            if ptr is not None:
+                super(cls, ptr_self).__init__(ptr)
+                return
+                
+            # Do we have the size information?
+            if size is not None:
+                super(cls, ptr_self).__init__(alloc(size))
+                return
+                
+            raise ValueError('Cannot allocate space for type "%s". Missing ' \
+                'size information.'% cls.__name__)
+                
+        cls.__init__ = __init__
         self[name] = cls
         return cls
 
@@ -188,7 +219,7 @@ class TypeManager(dict):
         '''
         Adds an attribute to a class.
         '''
-        
+
         if str_type not in NATIVE_TYPES:
             converter_name = str_type
             str_type = 'ptr'
