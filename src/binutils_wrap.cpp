@@ -126,7 +126,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ulong_long_overload, CPointer::Get<un
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_float_overload, CPointer::Get<float>, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_double_overload, CPointer::Get<double>, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ptr_overload, CPointer::GetPtr, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_string_overload, CPointer::GetString, 0, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_string_overload, CPointer::Get<const char *>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_string_array_overload, CPointer::GetStringArray, 0, 1)
 
 // set_<type> methods
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_bool_overload, CPointer::Set<bool>, 1, 2)
@@ -143,7 +144,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ulong_long_overload, CPointer::Set<un
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_float_overload, CPointer::Set<float>, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_double_overload, CPointer::Set<double>, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ptr_overload, CPointer::SetPtr, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload, CPointer::SetString, 1, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload, CPointer::Set<const char *>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_array_overload, CPointer::SetStringArray, 1, 3)
 
 void ExposeTools()
 {
@@ -316,9 +318,16 @@ void ExposeTools()
         )
 
         .def("get_string",
-            &CPointer::GetString,
+            &CPointer::Get<const char *>,
             get_string_overload(
-                args("offset", "bIsPtr"),
+                args("offset"),
+                "Returns the value at the given memory location as a string.")
+        )
+
+        .def("get_string_array",
+            &CPointer::GetStringArray,
+            get_string_array_overload(
+                args("offset"),
                 "Returns the value at the given memory location as a string.")
         )
 
@@ -422,9 +431,16 @@ void ExposeTools()
         )
 
         .def("set_string",
-            &CPointer::SetString,
+            &CPointer::Set<const char *>,
             set_string_overload(
-            args("text", "size", "offset", "is_ptr"),
+            args("text", "offset"),
+                "Sets the value at the given memory location as a string.")
+        )
+
+        .def("set_string_array",
+            &CPointer::SetStringArray,
+            set_string_array_overload(
+            args("text", "offset", "size"),
                 "Sets the value at the given memory location as a string.")
         )
 

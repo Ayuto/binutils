@@ -40,7 +40,8 @@ NATIVE_TYPES = (
     'float',
     'double',
     'ptr',
-    'string'
+    'string',
+    'string_array'
 )
 
 
@@ -61,14 +62,14 @@ class Pipe(dict):
     '''
 
     def __init__(self, *files):
-        config = self.__read_files(files)
+        config = self.read_files(*files)
 
         # Get all options and their values as a dict
         for section in config.sections():
             self[section] = dict((opt, config.get(section, opt)) for opt \
                 in config.options(section))
 
-    def __read_files(self, files):
+    def read_files(self, *files):
         config = ConfigParser.ConfigParser()
         for f in files:
             if not hasattr(f, 'readline'):
@@ -159,17 +160,23 @@ class TypeManager(dict):
 
         pass
 
+    def parse_files(self, *files):
+        '''
+        '''
+
+        pass
+
     def add_type(self, name, cls, size=None, override=False):
         '''
         Adds the given type to the manager. Raises an error of the type
         already exists unless <override> was set to True.
 
         The type has to be a sub-class of Pointer.
-        
+
         Be careful when you implement an __init__ function. It requires the
         the following signature:
         __init__(self, ptr):
-        
+
         This function overrides your function with an __init__ function that
         will eventually allocate space (if <ptr> is None and <size> was
         given).
@@ -180,28 +187,28 @@ class TypeManager(dict):
 
         if not issubclass(cls, Pointer):
             raise ValueError('Given class is not a subclass of Pointer.')
-            
+
         # Save the old __init__
         old_init = cls.__init__ if '__init__' in cls.__dict__ else \
             lambda self, ptr: None
-            
+
         def __init__(ptr_self, ptr=None):
             # Call the old __init__ function
             old_init(ptr_self, ptr)
-            
+
             # Do we want to wrap a pointer?
             if ptr is not None:
                 super(cls, ptr_self).__init__(ptr)
                 return
-                
+
             # Do we have the size information?
             if size is not None:
                 super(cls, ptr_self).__init__(alloc(size))
                 return
-                
+
             raise ValueError('Cannot allocate space for type "%s". Missing ' \
                 'size information.'% cls.__name__)
-                
+
         cls.__init__ = __init__
         self[name] = cls
         return cls
@@ -214,8 +221,8 @@ class TypeManager(dict):
 
         return (self.attribute, self.function, self.virtual_function)
 
-    def attribute(self, str_type, offset=0, str_is_ptr=True, str_size=0,
-            flags=ATTR_READ_WRITE, converter_name=None, doc=None):
+    def attribute(self, str_type, offset=0, str_size=0, flags=ATTR_READ_WRITE,
+            converter_name=None, doc=None):
         '''
         Adds an attribute to a class.
         '''
@@ -226,20 +233,17 @@ class TypeManager(dict):
 
         # Getter method
         def fget(ptr_self):
-            result = None
             func = getattr(ptr_self, 'get_' + str_type)
-            if str_type == 'string':
-                result = func(offset, str_is_ptr)
-            else:
-                result = func(offset)
+            if str_type == 'ptr':
+                return self[converter_name](func(offset))
 
-            return self[converter_name](result)
+            return func(offset)
 
         # Setter method
         def fset(ptr_self, value):
             func = getattr(ptr_self, 'set_' + str_type)
-            if str_type == 'string':
-                func(value, str_size, offset, str_is_ptr)
+            if str_type == 'string_array':
+                func(value, offset, str_size)
             else:
                 func(value, offset)
 

@@ -139,22 +139,19 @@ void CPointer::Move(object oDest, unsigned long ulNumBytes)
     memmove((void *) ulDest, (void *) m_ulAddr, ulNumBytes);
 }
 
-const char * CPointer::GetString(int iOffset /* = 0 */, bool bIsPtr /* = true */)
+const char * CPointer::GetStringArray(int iOffset /* = 0 */)
 {
     if (!IsValid())
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
-
-    if (bIsPtr)
-        return Get<char *>(iOffset);
-
+        
     return (char *) (m_ulAddr + iOffset);
 }
 
-void CPointer::SetString(char* szText, int iSize /* = 0 */, int iOffset /* = 0 */, bool bIsPtr /* = true */)
+void CPointer::SetStringArray(char* szText, int iOffset /* = 0 */, int iSize /* = 0 */)
 {
     if (!IsValid())
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
-
+        
     if (!iSize)
     {
         iSize = UTIL_GetSize((void *) (m_ulAddr + iOffset));
@@ -162,13 +159,10 @@ void CPointer::SetString(char* szText, int iSize /* = 0 */, int iOffset /* = 0 *
             BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Unable to retrieve size of address.")
     }
 
-    if ((int ) strlen(szText) >= iSize)
+    if ((int) strlen(szText) >= iSize)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "String exceeds size of memory block.")
 
-    if (bIsPtr)
-        Set<char *>(szText, iOffset);
-    else
-        strcpy((char *) (m_ulAddr + iOffset), szText);
+    strcpy((char *) (m_ulAddr + iOffset), szText);
 }
 
 CPointer* CPointer::GetPtr(int iOffset /* = 0 */)

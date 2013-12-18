@@ -85,8 +85,9 @@ public:
         *(T *) newAddr = value;
     }
 
-    const char *        GetString(int iOffset = 0, bool bIsPtr = true);
-    void                SetString(char* szText, int iSize = 0, int iOffset = 0, bool bIsPtr = true);
+    const char *        GetStringArray(int iOffset = 0);
+    void                SetStringArray(char* szText, int iOffset = 0, int iSize = 0);
+    
     CPointer*           GetPtr(int iOffset = 0);
     void                SetPtr(object oPtr, int iOffset = 0);
 
