@@ -73,6 +73,20 @@ class Pipe(dict):
         '''
         Initializes the pipe and parses all given files. <manager> must be a
         TypeManager object.
+
+        Example for a file:
+
+        [<function name>]
+        # Required:
+        binary     = <path to binary>
+        identifier = <symbol or signature>
+        parameters = <parameters>
+        converter  = <type or converter>
+
+        # Optional:
+        srv_check     = <default: True>
+        convention    = <calling convention, default: CDECL>
+        documentation = <default: ''>
         '''
 
         # Save the manager for later converter access
@@ -147,9 +161,19 @@ class TypeManager(dict):
 
         self[None] = converter
 
+    def create_converter(self, name):
+        '''
+        Creates a callable converter by name. That means the type is evaluated
+        when the converter gets called.
+        '''
+
+        return lambda x: self[name](x)
+
     def create_pipe_from_file(self, *files):
         '''
         Creates a new Pipe object.
+
+        For more information take a look at the Pipe documentation.
         '''
 
         return Pipe(self, *files)
@@ -161,7 +185,6 @@ class TypeManager(dict):
         '''
 
         return self.add_type(
-            name,
             type(name, (Pointer,), cls_dict),
             size,
             override
@@ -169,16 +192,63 @@ class TypeManager(dict):
 
     def create_type_from_file(self, type_name, *files):
         '''
-        Same as "create_type()", but creates a type from the specified
-        file(s).
+        This is the same like TypeManager.create_type(), but creates a type
+        from the given files.
+
+        If you have a type that inherits another one you can pass the files in
+        the following order to emulate inheritance:
+        InheritedType = manager.create_type_from_file('InheritedType',
+            'BaseType.ini', 'InheritedType.ini')
+
+        Example for a file:
+
+        # Optional -- required for type creation
+        type_size = 72
+
+        [attributes]
+            [[<attribute name>]]
+            # Required:
+            converter  = <type or converter>
+            identifier = <offset>
+
+            # Optional:
+            str_size      = <size of string array, default: 0>
+            flags         = <attribute flags, default: READ_WRITE>
+            documentation = <default: ''>
+
+        [functions]
+            [[<function name>]]
+            # Required
+            binary = <path to binary>
+            identifier = <signature or symbol>
+            parameters = <parameters>
+
+            # Optional
+            convention    = <calling convention, default: THISCALL>
+            srv_check     = <default: True>
+            converter     = <converter name, default: None>
+            documentation = <default: ''>
+
+        [virtual_functions]
+            [[<function name>]]
+            # Required:
+            identifier = <index in the virtual table>
+            parameters = <parameters>
+
+            # Optional:
+            convention    = <calling convention, default: THISCALL>
+            converter     = <converter name, default: None>
+            documentation = <default: ''>
+
+
+        All sections (attributes, functions, virtual_functions) are optional.
         '''
 
         cls_dict = {}
         raw_data = read_files(*files)
+        size     = raw_data.get(KEY_TYPE_SIZE)
 
-        # =====================================================================
-        # >> Parse the attributes!
-        # =====================================================================
+        # Parse the attributes
         attributes = parse_data(
             raw_data.get(KEY_ATTRIBUTES, {}),
             (
@@ -193,9 +263,7 @@ class TypeManager(dict):
         for name, data in attributes:
             cls_dict[name] = self.attribute(*data)
 
-        # =====================================================================
-        # >> Parse the functions
-        # =====================================================================
+        # Parse the functions
         functions = parse_data(
             raw_data.get(KEY_FUNCTIONS, {}),
             (
@@ -212,16 +280,13 @@ class TypeManager(dict):
         for name, data in functions:
             cls_dict[name] = self.function(*data)
 
-        # =====================================================================
-        # >> Parse the virtual functions
-        # =====================================================================
+        # Parse the virtual functions
         virtual_functions = parse_data(
             raw_data.get(KEY_VIRTUAL_FUNCTIONS, {}),
             (
                 (KEY_IDENTIFIER, int, None),
                 (KEY_PARAMETERS, str, None),
                 (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
-                # Workaround as we cannot use None as a default value
                 (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
                 (KEY_DOCUMENTATION, str, '')
             )
@@ -231,9 +296,9 @@ class TypeManager(dict):
             cls_dict[name] = self.virtual_function(*data)
 
         # Create the type and return it
-        return self.create_type(type_name, cls_dict, raw_data.get(KEY_TYPE_SIZE))
+        return self.create_type(type_name, cls_dict, size and int(size))
 
-    def add_type(self, name, cls, size=None, override=False):
+    def add_type(self, cls, size=None, override=False):
         '''
         Adds the given type to the manager. Raises an error of the type
         already exists unless <override> was set to True.
@@ -249,6 +314,7 @@ class TypeManager(dict):
         given).
         '''
 
+        name = cls.__name__
         if not override and name in self:
             raise NameError('Cannot create type. "%s" already exists.'% name)
 
@@ -350,14 +416,6 @@ class TypeManager(dict):
 
         func.__doc__ = doc
         return func
-
-    def create_converter(self, name):
-        '''
-        Creates a callable converter by name. That means the type is evaluated
-        when the converter gets called.
-        '''
-
-        return lambda x: self[name](x)
 
 # Create a manager that can be used by all programs
 type_manager = TypeManager()
@@ -535,12 +593,35 @@ def read_files(*files):
 def parse_data(raw_data, keys):
     '''
     Parses the data dictionary by converting the values of the given keys into
-    the proper type or assigning them default values.
+    the proper type or assigning them default values. Raises a KeyError if a
+    key does not exist and if no default value is available.
 
     Returns a generator: (<name>, [<value of key0>, <value of key1>, ...])
 
     <keys> must have the following structure:
     ((<key name>, <converter>, <default value or None>), ...)
+
+
+    Information about data which comes from a file:
+
+    You can specialize every key by adding a "_nt" (for Windows) or a
+    "_posix" (for Linux) to the end a key.
+
+    For example:
+    If you are using a signature on Windows, but a symbol on Linux, you have
+    three possibilities to do that:
+
+    1.
+    identifier_nt    = <signature for Windows>
+    identifier       = <symbol for Linux>
+
+    2.
+    identifier       = <signature for Windows>
+    identifier_posix = <symbol for Linux>
+
+    3.
+    identifier_nt    = <signature for Windows>
+    identifier_posix = <symbol for Linux>
     '''
 
     for func_name, func_data in raw_data.iteritems():
@@ -560,7 +641,8 @@ def parse_data(raw_data, keys):
 
 def as_bool(value):
     '''
-    Converts the given string to a bool.
+    Converts a string that represents a boolean value into a boolean value.
+    Raises a ValueError if the string doesn't represent such a value.
     '''
 
     value = value.lower()
