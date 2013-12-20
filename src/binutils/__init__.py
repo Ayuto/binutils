@@ -2,9 +2,10 @@
 # >> IMPORTS
 # =============================================================================
 # Python
-import ConfigParser
 import os
 import binascii
+
+from configobj import ConfigObj
 
 # binutils
 from binutils import *
@@ -13,18 +14,24 @@ from binutils import *
 # =============================================================================
 # >> CONSTANTS
 # =============================================================================
-# *.ini files layout
-KEY_BINARY     = 'binary'
-KEY_CONVENTION = 'convention'
-KEY_PARAMETERS = 'parameters'
-KEY_IDENTIFIER = os.name
+# All available keys in data files
+KEY_BINARY            = 'binary'
+KEY_IDENTIFIER        = 'identifier'
+KEY_CONVENTION        = 'convention'
+KEY_PARAMETERS        = 'parameters'
+KEY_SRV_CHECK         = 'srv_check'
+KEY_CONVERTER         = 'converter'
+KEY_STR_SIZE          = 'str_size'
+KEY_TYPE_SIZE         = 'type_size'
+KEY_ATTR_FLAGS        = 'flags'
+KEY_DOCUMENTATION     = 'documentation'
 
-# Read/write flags for class attributes
-ATTR_READ       = 1 << 0
-ATTR_WRITE      = 1 << 1
-ATTR_READ_WRITE = ATTR_READ | ATTR_WRITE
+# Sub information keys
+KEY_ATTRIBUTES        = 'attributes'
+KEY_FUNCTIONS         = 'functions'
+KEY_VIRTUAL_FUNCTIONS = 'virtual_functions'
 
-# A tuple of native types
+# A tuple of all supported native types
 NATIVE_TYPES = (
     'bool',
     'char',
@@ -44,72 +51,73 @@ NATIVE_TYPES = (
     'string_array'
 )
 
+# Read/write flags for class attributes
+class AttrFlags:
+    READ       = 1 << 0
+    WRITE      = 1 << 1
+    READ_WRITE = READ | WRITE
+
 
 # =============================================================================
 # >> CLASSES
 # =============================================================================
 class Pipe(dict):
     '''
-    This class is used to create a pipe to normal functions and methods.
+    This class is mostly used to create a pipe to global functions. But you
+    can also create member functions as global functions.
 
-    LAYOUT:
-    [<function name>]
-    binary     = <path to a binary>
-    linux      = <symbol of the function>
-    nt         = <symbol or signature of the function>
-    convention = <calling convention>
-    parameters = <parameter string>
+    You cannot create virtual functions or attributes with this class!
     '''
 
-    def __init__(self, *files):
-        config = self.read_files(*files)
+    def __init__(self, manager, *files):
+        '''
+        Initializes the pipe and parses all given files. <manager> must be a
+        TypeManager object.
+        '''
 
-        # Get all options and their values as a dict
-        for section in config.sections():
-            self[section] = dict((opt, config.get(section, opt)) for opt \
-                in config.options(section))
+        # Save the manager for later converter access
+        self.type_manager = manager
 
-    def read_files(self, *files):
-        config = ConfigParser.ConfigParser()
-        for f in files:
-            if not hasattr(f, 'readline'):
-                if not os.path.isfile(f):
-                    raise ValueError('"%s" is no file or readable object.'% f)
+        # Parse all data from the given files
+        data = parse_data(
+            read_files(*files),
+            (
+                (KEY_BINARY, str, None),
+                (KEY_IDENTIFIER, str, None),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'CDECL'),
+                (KEY_PARAMETERS, str, None),
+                (KEY_SRV_CHECK, as_bool, 'True'),
+                (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_DOCUMENTATION, str, '')
+            )
+        )
 
-                config.read(f)
-            else:
-                config.readfp(f)
-                try:
-                    f.close()
-                except:
-                    pass
-
-        return config
+        # Add all functions to the pipe
+        for func_name, func_data in data:
+            self.add_function(func_name, *func_data)
 
     def __getattr__(self, attr):
-        options = self[attr]
+        '''
+        Redirects to __getitem__, which returns a function called <attr>.
+        '''
 
-        # Is it already a function?
-        if isinstance(options, Function):
-            return options
+        return self[attr]
 
-        # Create the function and override the information
-        func = self[attr] = make_function(
-            options[KEY_BINARY],
-            options[KEY_IDENTIFIER],
-            getattr(Convention, options[KEY_CONVENTION]),
-            options[KEY_PARAMETERS]
+    def add_function(self, name, binary, identifier, convention, parameters,
+            srv_check=True, converter_name=None, doc=None):
+        '''
+        Adds a function to the pipe.
+        '''
+
+        func = self[name] = make_function(binary, identifier,
+            convention,
+            parameters,
+            srv_check,
+            self.type_manager.create_converter(converter_name),
+            doc
         )
 
         return func
-
-    def add_function(self, name, binary, identifier, convention, parameters):
-        self[name] = {
-            KEY_BINARY:     binary,
-            KEY_IDENTIFIER: identifier,
-            KEY_CONVENTION: convention,
-            KEY_PARAMETERS: parameters,
-        }
 
 
 class TypeManager(dict):
@@ -139,6 +147,13 @@ class TypeManager(dict):
 
         self[None] = converter
 
+    def create_pipe_from_file(self, *files):
+        '''
+        Creates a new Pipe object.
+        '''
+
+        return Pipe(self, *files)
+
     def create_type(self, name, cls_dict, size=None, override=False):
         '''
         Creates a new type. If the type already exists, an error will be
@@ -152,19 +167,71 @@ class TypeManager(dict):
             override
         )
 
-    def create_type_from_file(self, name, files, override=False):
+    def create_type_from_file(self, type_name, *files):
         '''
         Same as "create_type()", but creates a type from the specified
         file(s).
         '''
 
-        pass
+        cls_dict = {}
+        raw_data = read_files(*files)
 
-    def parse_files(self, *files):
-        '''
-        '''
+        # =====================================================================
+        # >> Parse the attributes!
+        # =====================================================================
+        attributes = parse_data(
+            raw_data.get(KEY_ATTRIBUTES, {}),
+            (
+                (KEY_CONVERTER, str, None),
+                (KEY_IDENTIFIER, int, None),
+                (KEY_STR_SIZE, int, 0),
+                (KEY_ATTR_FLAGS, lambda x: getattr(AttrFlags, x), 'READ_WRITE'),
+                (KEY_DOCUMENTATION, str, '')
+            )
+        )
 
-        pass
+        for name, data in attributes:
+            cls_dict[name] = self.attribute(*data)
+
+        # =====================================================================
+        # >> Parse the functions
+        # =====================================================================
+        functions = parse_data(
+            raw_data.get(KEY_FUNCTIONS, {}),
+            (
+                (KEY_BINARY, str, None),
+                (KEY_IDENTIFIER, str, None),
+                (KEY_PARAMETERS, str, None),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
+                (KEY_SRV_CHECK, as_bool, 'True'),
+                (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_DOCUMENTATION, str, '')
+            )
+        )
+
+        for name, data in functions:
+            cls_dict[name] = self.function(*data)
+
+        # =====================================================================
+        # >> Parse the virtual functions
+        # =====================================================================
+        virtual_functions = parse_data(
+            raw_data.get(KEY_VIRTUAL_FUNCTIONS, {}),
+            (
+                (KEY_IDENTIFIER, int, None),
+                (KEY_PARAMETERS, str, None),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
+                # Workaround as we cannot use None as a default value
+                (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_DOCUMENTATION, str, '')
+            )
+        )
+
+        for name, data in virtual_functions:
+            cls_dict[name] = self.virtual_function(*data)
+
+        # Create the type and return it
+        return self.create_type(type_name, cls_dict, raw_data.get(KEY_TYPE_SIZE))
 
     def add_type(self, name, cls, size=None, override=False):
         '''
@@ -175,7 +242,7 @@ class TypeManager(dict):
 
         Be careful when you implement an __init__ function. It requires the
         the following signature:
-        __init__(self, ptr):
+        __init__(self, ptr)
 
         This function overrides your function with an __init__ function that
         will eventually allocate space (if <ptr> is None and <size> was
@@ -221,23 +288,24 @@ class TypeManager(dict):
 
         return (self.attribute, self.function, self.virtual_function)
 
-    def attribute(self, str_type, offset=0, str_size=0, flags=ATTR_READ_WRITE,
-            converter_name=None, doc=None):
+    def attribute(self, str_type, offset=0, str_size=0,
+            flags=AttrFlags.READ_WRITE, doc=None):
         '''
         Adds an attribute to a class.
         '''
 
+        converter_name = None
         if str_type not in NATIVE_TYPES:
             converter_name = str_type
             str_type = 'ptr'
 
         # Getter method
         def fget(ptr_self):
-            func = getattr(ptr_self, 'get_' + str_type)
+            result = getattr(ptr_self, 'get_' + str_type)(offset)
             if str_type == 'ptr':
-                return self[converter_name](func(offset))
+                return self[converter_name](result)
 
-            return func(offset)
+            return result
 
         # Setter method
         def fset(ptr_self, value):
@@ -248,11 +316,11 @@ class TypeManager(dict):
                 func(value, offset)
 
         # Return the proper property object depending on the flags
-        if flags & ATTR_READ_WRITE:
+        if flags & AttrFlags.READ_WRITE:
             return property(fget, fset, doc=doc)
-        elif flags & ATTR_READ:
+        elif flags & AttrFlags.READ:
             return property(fget, doc=doc)
-        elif flags & ATTR_WRITE:
+        elif flags & AttrFlags.WRITE:
             return property(fset=fset, doc=doc)
 
         # Raise an error as we cannot read or write the attribute
@@ -297,8 +365,6 @@ type_manager = TypeManager()
 
 class _EvalFunction(Function):
     '''
-    Intern use only.
-
     This is a wrapper for the Thiscall constructor.
     '''
 
@@ -318,8 +384,6 @@ class _EvalFunction(Function):
 
 class _EvalVirtualFunction(object):
     '''
-    Intern use only!
-
     This is a wrapper for the Thiscall constructor. We can only evaluate the
     virtual function when we get a valid this-pointer.
 
@@ -386,14 +450,16 @@ class Thiscall(Function):
 
     def __call__(self, *args):
         '''
-        Calls the function.
+        Calls the function. The this-pointer is automatically passed to the
+        function.
         '''
 
         return super(Thiscall, self).__call__(self.this, *args)
 
     def call_trampoline(self, *args):
         '''
-        Calls the trampoline
+        Calls the trampoline. The this-pointer is automatically passed to the
+        trampoline.
         '''
 
         return super(Thiscall, self).call_trampoline(self.this, *args)
@@ -403,9 +469,9 @@ class Thiscall(Function):
 # >> FUNCTIONS
 # =============================================================================
 def make_function(binary, identifier, convention, parameters, srv_check=True,
-        converter=lambda x: x):
+        converter=lambda x: x, doc=None):
     '''
-    This is a shortcut for creating new functions.
+    Creates a new function. Signatures have to be passed with spaces.
     '''
 
     binary = binutils.find_binary(binary, srv_check)
@@ -427,5 +493,81 @@ def make_function(binary, identifier, convention, parameters, srv_check=True,
         if not func_ptr:
             raise ValueError('Could not find symbol "%s".'% identifier)
 
-    # Return a new Function object
-    return func_ptr.make_function(convention, parameters, converter)
+    func = func_ptr.make_function(convention, parameters, converter)
+    func.__doc__ = doc
+    return func
+
+def create_string(text, size=None):
+    '''
+    Creates a new string. If <size> is None len(<text>) + 1 bytes are allocated.
+    Otherwise it will allocate <size> bytes.
+    '''
+
+    ptr = alloc(len(text) + 1 if size is None else size)
+    try:
+        ptr.set_string_array(text)
+    except ValueError:
+        ptr.dealloc()
+        raise ValueError('String exceeds size of memory block.')
+
+    return ptr
+
+
+# =============================================================================
+# >> HELPER FUNCTIONS
+# =============================================================================
+def read_files(*files):
+    '''
+    Reads all passed data files and converts them to a dictionary. If the
+    given files provides a close() function, it will be called.
+    '''
+
+    data = {}
+    for f in files:
+        data.update(ConfigObj(f))
+        try:
+            f.close()
+        except AttributeError:
+            pass
+
+    return data
+
+def parse_data(raw_data, keys):
+    '''
+    Parses the data dictionary by converting the values of the given keys into
+    the proper type or assigning them default values.
+
+    Returns a generator: (<name>, [<value of key0>, <value of key1>, ...])
+
+    <keys> must have the following structure:
+    ((<key name>, <converter>, <default value or None>), ...)
+    '''
+
+    for func_name, func_data in raw_data.iteritems():
+        data = []
+        for key, converter, default in keys:
+            # Get the OS specific key. If that fails, fall back to the shared
+            # key. If that fails too, use the default value
+            value = func_data.get(key + '_' + os.name, func_data.get(key, default))
+
+            # If this is still None, we are missing that information
+            if value is None:
+                raise KeyError('Missing information for key "%s".'% key)
+
+            data.append(converter(value))
+
+        yield (func_name, data)
+
+def as_bool(value):
+    '''
+    Converts the given string to a bool.
+    '''
+
+    value = value.lower()
+    if value == 'true':
+        return True
+
+    if value == 'false':
+        return False
+
+    raise ValueError('Cannot convert "%s" to a boolean value.'% value)
