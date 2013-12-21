@@ -35,6 +35,12 @@ using namespace boost::python;
 
 
 // ============================================================================
+// >> DEINITIONS
+// ============================================================================
+#define MAX_PARAMETER_STR 32
+
+
+// ============================================================================
 // >> Convention_t enum
 // ============================================================================
 inline int GetDynCallConvention(Convention_t eConv)
@@ -136,9 +142,12 @@ public:
 
     void RemovePreHook(PyObject* pCallable);
     void RemovePostHook(PyObject* pCallable);
+    
+    void SetParams(char* szPrams);
+    const char* GetParams();
 
 public:
-    char*        m_szParams;
+    char         m_szParams[MAX_PARAMETER_STR];
     Convention_t m_eConv;
     object       m_oConverter;
 };
