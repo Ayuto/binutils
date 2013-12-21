@@ -527,8 +527,9 @@ void ExposeTools()
         )
         
         // Attributes
-        .def_readwrite("parameters",
-            &CFunction::m_szParams,
+        .add_property("parameters",
+            &CFunction::GetParams,
+            &CFunction::SetParams,
             "Returns the parameter string."
         )
         

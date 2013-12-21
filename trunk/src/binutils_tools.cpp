@@ -230,8 +230,9 @@ CFunction::CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, P
 {
     m_ulAddr = ulAddr;
     m_eConv = eConv;
-    m_szParams = szParams;
     m_oConverter = pConverter ? object(handle<>(borrowed(pConverter))) : eval("lambda x: x");
+    
+    SetParams(szParams);
 }
 
 object CFunction::__call__(object args)
@@ -356,6 +357,16 @@ void CFunction::RemovePreHook(PyObject* pCallable)
 void CFunction::RemovePostHook(PyObject* pCallable)
 {
     Unhook(HOOKTYPE_POST, pCallable);
+}
+
+void CFunction::SetParams(char* szParams)
+{
+    strcpy(m_szParams, szParams);
+}
+
+const char* CFunction::GetParams()
+{
+    return (const char *) m_szParams;
 }
 
 // ============================================================================
