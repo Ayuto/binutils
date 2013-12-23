@@ -35,7 +35,7 @@ void ExposeDynamicHooks();
 // ============================================================================
 // >> Expose the binutils module
 // ============================================================================
-BOOST_PYTHON_MODULE(binutils)
+BOOST_PYTHON_MODULE(_binutils)
 {
     ExposeScanner();
     ExposeTools();
@@ -84,7 +84,7 @@ void ExposeScanner()
         )
 
         // Properties
-        .add_property("addr",
+        .add_property("address",
             &CBinaryFile::GetAddress,
             "Returns the base address of this binary."
         )

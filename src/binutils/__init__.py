@@ -8,7 +8,7 @@ import binascii
 from configobj import ConfigObj
 
 # binutils
-from binutils import *
+from _binutils import *
 
 
 # =============================================================================
@@ -77,6 +77,13 @@ class TypeManager(dict):
 
         # Default converter -- do nothing
         self.set_default_converter(lambda x: x)
+        
+    def __getattr__(self, attr):
+        '''
+        Redirection to TypeManager.__getitem__.
+        '''
+        
+        return self[attr]
 
     def set_default_converter(self, converter):
         '''
@@ -317,7 +324,7 @@ class TypeManager(dict):
             convention=Convention.CDECL, srv_check=True,
             converter_name=None, doc=None):
         '''
-        Returns a new function object.
+        Returns a new Function object.
         '''
 
         return make_function(binary, identifier, parameters, convention,
@@ -518,7 +525,7 @@ def make_function(binary, identifier, convention, parameters, srv_check=True,
     Creates a new function. Signatures have to be passed with spaces.
     '''
 
-    binary = binutils.find_binary(binary, srv_check)
+    binary = find_binary(binary, srv_check)
 
     # Is it a signature?
     if os.name == 'nt' and ' ' in identifier:
@@ -590,8 +597,8 @@ def parse_data(raw_data, keys):
 
     Information about data which comes from a file:
 
-    You can specialize every key by adding a "_nt" (for Windows) or a
-    "_posix" (for Linux) to the end a key.
+    You can specialize every key by adding "_nt" (for Windows) or "_posix"
+    (for Linux) to the end a key.
 
     For example:
     If you are using a signature on Windows, but a symbol on Linux, you have
