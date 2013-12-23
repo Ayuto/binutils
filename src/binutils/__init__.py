@@ -25,6 +25,7 @@ KEY_STR_SIZE          = 'str_size'
 KEY_TYPE_SIZE         = 'type_size'
 KEY_ATTR_FLAGS        = 'flags'
 KEY_DOCUMENTATION     = 'documentation'
+KEY_ALIGNED           = 'aligned'
 
 # Sub information keys
 KEY_ATTRIBUTES        = 'attributes'
@@ -137,7 +138,7 @@ class Pipe(dict):
 class TypeManager(dict):
     '''
     The TypeManager is an extremely powerful class, which gives you the
-    ability to create new custom types. That means you can restructure
+    ability to create new custom types. That means you can reconstruct
     every possible data type. You only have to feed the manager with some
     information.
     '''
@@ -256,6 +257,7 @@ class TypeManager(dict):
                 (KEY_IDENTIFIER, int, None),
                 (KEY_STR_SIZE, int, 0),
                 (KEY_ATTR_FLAGS, lambda x: getattr(AttrFlags, x), 'READ_WRITE'),
+                (KEY_ALIGNED, as_bool, 'False'),
                 (KEY_DOCUMENTATION, str, '')
             )
         )
@@ -355,18 +357,29 @@ class TypeManager(dict):
         return (self.attribute, self.function, self.virtual_function)
 
     def attribute(self, str_type, offset=0, str_size=0,
-            flags=AttrFlags.READ_WRITE, doc=None):
+            flags=AttrFlags.READ_WRITE, aligned=False, doc=None):
         '''
         Adds an attribute to a class.
         '''
+
+        # We don't want the user to pass redundant information
+        if str_type != 'string_array' and str_size != 0:
+            raise ValueError('Parameter "str_size" is only required for att' \
+                'ributes of type "string_array".')
 
         converter_name = None
         if str_type not in NATIVE_TYPES:
             converter_name = str_type
             str_type = 'ptr'
+        elif aligned:
+            raise ValueError('You cannot align an attribute of type "%s".'% \
+                str_type)
 
         # Getter method
         def fget(ptr_self):
+            if aligned:
+                return self[converter_name](ptr_self + offset)
+
             result = getattr(ptr_self, 'get_' + str_type)(offset)
             if str_type == 'ptr':
                 return self[converter_name](result)
@@ -375,6 +388,12 @@ class TypeManager(dict):
 
         # Setter method
         def fset(ptr_self, value):
+            if aligned:
+                # Using memcpy() is probably the best, but that would require
+                # a size, which we cannot know here.
+                raise NotImplementedError('Setting aligned types is current' \
+                    'ly not supported.')
+
             func = getattr(ptr_self, 'set_' + str_type)
             if str_type == 'string_array':
                 func(value, offset, str_size)
@@ -391,6 +410,7 @@ class TypeManager(dict):
 
         # Raise an error as we cannot read or write the attribute
         raise AttributeError('Attribute is not readable or writeable.')
+
 
     def function(self, binary, identifier, parameters,
             convention=Convention.THISCALL, srv_check=True,
