@@ -20,7 +20,7 @@ SOURCES = [
     'src/binutils_tools.cpp',
     'src/binutils_hooks.cpp',
     'src/binutils_scanner.cpp',
-    
+
     # DynamicHooks
     'src/thirdparty/DynamicHooks/DynamicHooks.cpp',
     'src/thirdparty/DynamicHooks/utilities.cpp',
@@ -82,7 +82,7 @@ COMPILER_FLAGS = [
 
     # Disable parentheses suggestions
     '-Wno-parentheses',
-    
+
     # Disable "deprecated conversion from string..." warning
     '-Wno-write-strings',
 ]
@@ -117,10 +117,10 @@ def main():
     # Compile the binary
     print('Compiling the binary...')
     setup(
-        name='binutils',
+        name='_binutils',
         ext_modules=[
             Extension(
-                'binutils',
+                '_binutils',
                 sources=SOURCES,
                 library_dirs=LIBRARY_DIRS,
                 libraries=LIBRARIES,
@@ -131,28 +131,28 @@ def main():
             ),
         ]
     )
-    
+
     # Remove possible garbage of last build
     print('Removing possible garbage of last build...')
     shutil.rmtree('binutils', True)
-    
+
     # Copy the binutils package to the current directory
     print('Copying ../src/binutils/ to ../binutils/ ...')
     shutil.copytree('src/binutils', 'binutils')
-    
+
     # Move the new compiled binary
-    name = 'binutils.' + ('pyd' if os.name == 'nt' else 'so')
-    
+    name = '_binutils.' + ('pyd' if os.name == 'nt' else 'so')
+
     print('Moving %s to ../binutils/ ...'% name)
     shutil.move(
         name,
         'binutils/' + name
     )
-    
+
     # Remove the build directory
     print('Removing ../build/ ...')
     shutil.rmtree('build', True)
-    
+
 now = time.time()
 main()
 print('Time elapsed: %.02f seconds.'% (time.time() - now))
