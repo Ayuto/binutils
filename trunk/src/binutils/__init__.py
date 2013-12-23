@@ -62,79 +62,6 @@ class AttrFlags:
 # =============================================================================
 # >> CLASSES
 # =============================================================================
-class Pipe(dict):
-    '''
-    This class is mostly used to create a pipe to global functions. But you
-    can also create member functions as global functions.
-
-    You cannot create virtual functions or attributes with this class!
-    '''
-
-    def __init__(self, manager, *files):
-        '''
-        Initializes the pipe and parses all given files. <manager> must be a
-        TypeManager object.
-
-        Example for a file:
-
-        [<function name>]
-        # Required:
-        binary     = <path to binary>
-        identifier = <symbol or signature>
-        parameters = <parameters>
-        converter  = <type or converter>
-
-        # Optional:
-        srv_check     = <default: True>
-        convention    = <calling convention, default: CDECL>
-        documentation = <default: ''>
-        '''
-
-        # Save the manager for later converter access
-        self.type_manager = manager
-
-        # Parse all data from the given files
-        data = parse_data(
-            read_files(*files),
-            (
-                (KEY_BINARY, str, None),
-                (KEY_IDENTIFIER, str, None),
-                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'CDECL'),
-                (KEY_PARAMETERS, str, None),
-                (KEY_SRV_CHECK, as_bool, 'True'),
-                (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
-                (KEY_DOCUMENTATION, str, '')
-            )
-        )
-
-        # Add all functions to the pipe
-        for func_name, func_data in data:
-            self.add_function(func_name, *func_data)
-
-    def __getattr__(self, attr):
-        '''
-        Redirects to __getitem__, which returns a function called <attr>.
-        '''
-
-        return self[attr]
-
-    def add_function(self, name, binary, identifier, convention, parameters,
-            srv_check=True, converter_name=None, doc=None):
-        '''
-        Adds a function to the pipe.
-        '''
-
-        func = self[name] = make_function(binary, identifier,
-            convention,
-            parameters,
-            srv_check,
-            self.type_manager.create_converter(converter_name),
-            doc
-        )
-
-        return func
-
-
 class TypeManager(dict):
     '''
     The TypeManager is an extremely powerful class, which gives you the
@@ -170,14 +97,52 @@ class TypeManager(dict):
 
         return lambda x: self[name](x)
 
+    def create_pipe(self, cls_dict):
+        '''
+        This function is mostly used to create a pipe to global functions. But
+        you can also create member functions as global functions (they will
+        require a valid this-pointer as the first argument).
+        '''
+
+        return type('Pipe', (object,), cls_dict)
+
     def create_pipe_from_file(self, *files):
         '''
-        Creates a new Pipe object.
+        Parses all given files and creates a new Pipe object.
 
-        For more information take a look at the Pipe documentation.
+        Example for a file:
+
+        [<function name>]
+        # Required:
+        binary     = <path to binary>
+        identifier = <symbol or signature>
+        parameters = <parameters>
+        converter  = <type or converter>
+
+        # Optional:
+        srv_check     = <default: True>
+        convention    = <calling convention, default: CDECL>
+        documentation = <default: ''>
         '''
 
-        return Pipe(self, *files)
+        cls_dict = {}
+        data = parse_data(
+            read_files(*files),
+            (
+                (KEY_BINARY, str, None),
+                (KEY_IDENTIFIER, str, None),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'CDECL'),
+                (KEY_PARAMETERS, str, None),
+                (KEY_SRV_CHECK, as_bool, 'True'),
+                (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_DOCUMENTATION, str, '')
+            )
+        )
+
+        for func_name, func_data in data:
+            cls_dict[func_name] = self.pipe_function(*func_data)
+
+        return self.create_pipe(cls_dict)
 
     def create_type(self, name, cls_dict, size=None, override=False):
         '''
@@ -348,13 +313,15 @@ class TypeManager(dict):
         self[name] = cls
         return cls
 
-    def get_decorators(self):
+    def pipe_function(self, binary, identifier, parameters,
+            convention=Convention.CDECL, srv_check=True,
+            converter_name=None, doc=None):
         '''
-        Returns the attribute, function and virtual function decorator (in
-        this order).
+        Returns a new function object.
         '''
 
-        return (self.attribute, self.function, self.virtual_function)
+        return make_function(binary, identifier, parameters, convention,
+            srv_check, self.create_converter(converter_name), doc)
 
     def attribute(self, str_type, offset=0, str_size=0,
             flags=AttrFlags.READ_WRITE, aligned=False, doc=None):
@@ -410,7 +377,6 @@ class TypeManager(dict):
 
         # Raise an error as we cannot read or write the attribute
         raise AttributeError('Attribute is not readable or writeable.')
-
 
     def function(self, binary, identifier, parameters,
             convention=Convention.THISCALL, srv_check=True,
