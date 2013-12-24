@@ -55,16 +55,6 @@ CPointer::CPointer(unsigned long ulAddr /* = 0 */)
     m_ulAddr = ulAddr;
 }
 
-CPointer* CPointer::Add(int iValue)
-{
-    return new CPointer(m_ulAddr + iValue);
-}
-
-CPointer* CPointer::Sub(int iValue)
-{
-    return Add(-iValue);
-}
-
 bool CPointer::Equals(object oOther)
 {
     return m_ulAddr == ExtractPyPtr(oOther);
@@ -73,7 +63,7 @@ bool CPointer::Equals(object oOther)
 int CPointer::Compare(object oOther, unsigned long ulNum)
 {
     unsigned long ulOther = ExtractPyPtr(oOther);
-    if (!IsValid() || ulOther == 0)
+    if (!m_ulAddr || ulOther == 0)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
         
     return memcmp((void *) m_ulAddr, (void *) ulOther, ulNum);
@@ -87,7 +77,7 @@ bool CPointer::IsOverlapping(object oOther, unsigned long ulNumBytes)
 
 CPointer* CPointer::SearchBytes(object oBytes, unsigned long ulNumBytes)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
         
     unsigned long iByteLen = len(oBytes);
@@ -121,7 +111,7 @@ CPointer* CPointer::SearchBytes(object oBytes, unsigned long ulNumBytes)
 void CPointer::Copy(object oDest, unsigned long ulNumBytes)
 {
     unsigned long ulDest = ExtractPyPtr(oDest);
-    if (!IsValid() || ulDest == 0)
+    if (!m_ulAddr || ulDest == 0)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
         
     if (IsOverlapping(oDest, ulNumBytes))
@@ -133,7 +123,7 @@ void CPointer::Copy(object oDest, unsigned long ulNumBytes)
 void CPointer::Move(object oDest, unsigned long ulNumBytes)
 {
     unsigned long ulDest = ExtractPyPtr(oDest);
-    if (!IsValid() || ulDest == 0)
+    if (!m_ulAddr || ulDest == 0)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
         
     memmove((void *) ulDest, (void *) m_ulAddr, ulNumBytes);
@@ -141,7 +131,7 @@ void CPointer::Move(object oDest, unsigned long ulNumBytes)
 
 const char * CPointer::GetStringArray(int iOffset /* = 0 */)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
         
     return (char *) (m_ulAddr + iOffset);
@@ -149,7 +139,7 @@ const char * CPointer::GetStringArray(int iOffset /* = 0 */)
 
 void CPointer::SetStringArray(char* szText, int iOffset /* = 0 */, int iSize /* = 0 */)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
         
     if (!iSize)
@@ -167,7 +157,7 @@ void CPointer::SetStringArray(char* szText, int iOffset /* = 0 */, int iSize /* 
 
 CPointer* CPointer::GetPtr(int iOffset /* = 0 */)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
     return new CPointer(*(unsigned long *) (m_ulAddr + iOffset));
@@ -175,7 +165,7 @@ CPointer* CPointer::GetPtr(int iOffset /* = 0 */)
 
 void CPointer::SetPtr(object oPtr, int iOffset /* = 0 */)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
     *(unsigned long *) (m_ulAddr + iOffset) = ExtractPyPtr(oPtr);
@@ -188,7 +178,7 @@ unsigned long CPointer::GetSize()
 
 CPointer* CPointer::GetVirtualFunc(int iIndex)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
     void** vtable = *(void ***) m_ulAddr;
@@ -211,9 +201,6 @@ void CPointer::Dealloc()
 
 CFunction* CPointer::MakeFunction(Convention_t eConv, char* szParams, PyObject* pConverter /* = NULL */)
 {
-    if (!IsValid())
-        BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
-
     return new CFunction(m_ulAddr, eConv, szParams, pConverter);
 }
 
@@ -237,7 +224,7 @@ CFunction::CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, P
 
 object CFunction::__call__(object args)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
     dcReset(g_pCallVM);
@@ -307,7 +294,7 @@ object CFunction::__call__(object args)
 
 object CFunction::CallTrampoline(object args)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
     CHook* pHook = g_pHookMngr->FindHook((void *) m_ulAddr);
@@ -319,7 +306,7 @@ object CFunction::CallTrampoline(object args)
 
 void CFunction::Hook(DynamicHooks::HookType_t eType, PyObject* pCallable)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
     CHook* pHook = g_pHookMngr->HookFunction((void *) m_ulAddr, m_eConv, m_szParams);
@@ -329,7 +316,7 @@ void CFunction::Hook(DynamicHooks::HookType_t eType, PyObject* pCallable)
 
 void CFunction::Unhook(DynamicHooks::HookType_t eType, PyObject* pCallable)
 {
-    if (!IsValid())
+    if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Function pointer is NULL.")
 
     CHook* pHook = g_pHookMngr->FindHook((void *) m_ulAddr);

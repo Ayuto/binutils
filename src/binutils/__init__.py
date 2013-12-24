@@ -77,12 +77,12 @@ class TypeManager(dict):
 
         # Default converter -- do nothing
         self.set_default_converter(lambda x: x)
-        
+
     def __getattr__(self, attr):
         '''
         Redirection to TypeManager.__getitem__.
         '''
-        
+
         return self[attr]
 
     def set_default_converter(self, converter):
@@ -318,6 +318,22 @@ class TypeManager(dict):
 
         cls.__init__ = __init__
         self[name] = cls
+        return cls
+
+    def create_function_typedef(self, name, convention, parameters,
+            converter_name=None, override=False):
+        '''
+        Creates a function typedef. That means you can use the returned
+        converter to wrap a pointer of a function without setting the function
+        data again.
+        '''
+
+        if not override and name in self:
+            raise NameError('Cannot create type. "%s" already exists.'% name)
+
+        cls = self[name] = lambda ptr: ptr.make_function(convention,
+            parameters, self.create_converter(converter_name))
+
         return cls
 
     def pipe_function(self, binary, identifier, parameters,

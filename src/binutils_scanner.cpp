@@ -203,7 +203,7 @@ CPointer* CBinaryFile::FindSymbol(char* szSymbol)
 CPointer* CBinaryFile::FindPointer(object szSignature, int iOffset)
 {
     CPointer* ptr = FindSignature(szSignature);
-    return ptr->IsValid() ? ptr->GetPtr(iOffset) : ptr;
+    return !ptr->m_ulAddr ? ptr->GetPtr(iOffset) : ptr;
 }
 
 // ============================================================================
