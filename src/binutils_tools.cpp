@@ -55,11 +55,6 @@ CPointer::CPointer(unsigned long ulAddr /* = 0 */)
     m_ulAddr = ulAddr;
 }
 
-bool CPointer::Equals(object oOther)
-{
-    return m_ulAddr == ExtractPyPtr(oOther);
-}
-
 int CPointer::Compare(object oOther, unsigned long ulNum)
 {
     unsigned long ulOther = ExtractPyPtr(oOther);
