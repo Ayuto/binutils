@@ -92,7 +92,7 @@ public:
     { m_ulAddr -= rhs; return *this; }
     
     bool operator!()
-    { return m_ulAddr ? true: false; }
+    { return !m_ulAddr; }
     
     template<class T>
     bool operator==(T const& rhs)
@@ -129,8 +129,6 @@ public:
 
     unsigned long       GetSize();
     unsigned long       GetAddress() { return m_ulAddr; }
-    
-    bool                Equals(object oOther);
 
     bool                IsOverlapping(object oOther, unsigned long ulNumBytes);
     CPointer*           SearchBytes(object oBytes, unsigned long ulNumBytes);
