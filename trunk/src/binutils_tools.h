@@ -71,11 +71,41 @@ class CPointer
 {
 public:
     CPointer(unsigned long ulAddr = 0);
+    
+    operator unsigned long() const { return m_ulAddr; }
+    
+    // Implement some operators
+    template<class T>
+    const CPointer operator+(T const& rhs)
+    { return CPointer(m_ulAddr + rhs); }
+    
+    template<class T>
+    const CPointer operator-(T const& rhs)
+    { return CPointer(m_ulAddr - rhs); }
+    
+    template<class T>
+    const CPointer operator+=(T const& rhs)
+    { m_ulAddr += rhs; return *this; }
+    
+    template<class T>
+    const CPointer operator-=(T const& rhs)
+    { m_ulAddr -= rhs; return *this; }
+    
+    bool operator!()
+    { return m_ulAddr ? true: false; }
+    
+    template<class T>
+    bool operator==(T const& rhs)
+    { return m_ulAddr == rhs; }
+    
+    template<class T>
+    bool operator!=(T const& rhs)
+    { return m_ulAddr != rhs; }
 
     template<class T>
     T Get(int iOffset = 0)
     {
-        if (!IsValid())
+        if (!m_ulAddr)
             BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
         return *(T *) (m_ulAddr + iOffset);
@@ -84,7 +114,7 @@ public:
     template<class T>
     void Set(T value, int iOffset = 0)
     {
-        if (!IsValid())
+        if (!m_ulAddr)
             BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
         unsigned long newAddr = m_ulAddr + iOffset;
@@ -99,10 +129,7 @@ public:
 
     unsigned long       GetSize();
     unsigned long       GetAddress() { return m_ulAddr; }
-
-    CPointer*           Add(int iValue);
-    CPointer*           Sub(int iValue);
-    bool                IsValid() { return m_ulAddr ? true: false; }
+    
     bool                Equals(object oOther);
 
     bool                IsOverlapping(object oOther, unsigned long ulNumBytes);

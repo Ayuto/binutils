@@ -449,33 +449,28 @@ void ExposeTools()
             &CPointer::GetAddress,
             "Returns the address of this memory block."
         )
-
-#if PYTHON_VERSION == 3
-        .def("__bool__",
-#else
-        .def("__nonzero__",
-#endif
-            &CPointer::IsValid,
-            "Returns True if the address is not NULL."
-        )
-
-        .def("__add__",
-            &CPointer::Add,
-            "Adds a value to the base address.",
-            manage_new_object_policy()
-        )
-
-        .def("__sub__",
-            &CPointer::Sub,
-            "Subtracts a value from the base address.",
-            manage_new_object_policy()
-        )
         
-        .def("__eq__",
-            &CPointer::Equals,
-            "Returns True if both pointers point to the the same address.",
-            args("other")
-        )
+        .def(!self)
+        
+        .def(self == other<unsigned long>())
+        .def(self == self)
+        
+        .def(self != other<unsigned long>())
+        .def(self != self)
+        
+        .def(self += int())
+        .def(self += self)
+        
+        .def(self + int())
+        .def(self + self)
+        .def(int() + self)
+        
+        .def(self -= int())
+        .def(self -= self)
+        
+        .def(self - int())
+        .def(self - self)
+        .def(int() - self)
         
         // Attributes
         .def_readwrite("address",
