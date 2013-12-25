@@ -60,7 +60,7 @@ int CPointer::Compare(object oOther, unsigned long ulNum)
     unsigned long ulOther = ExtractPyPtr(oOther);
     if (!m_ulAddr || ulOther == 0)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
-        
+
     return memcmp((void *) m_ulAddr, (void *) ulOther, ulNum);
 }
 
@@ -74,15 +74,15 @@ CPointer* CPointer::SearchBytes(object oBytes, unsigned long ulNumBytes)
 {
     if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
-        
+
     unsigned long iByteLen = len(oBytes);
     if (ulNumBytes < iByteLen)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Search range is too small.")
-    
+
     unsigned char* base  = (unsigned char *) m_ulAddr;
     unsigned char* end   = (unsigned char *) (m_ulAddr + ulNumBytes - (iByteLen - 1));
     unsigned char* bytes = GetByteRepr(oBytes);
-    
+
     while (base < end)
     {
         unsigned long i = 0;
@@ -90,14 +90,14 @@ CPointer* CPointer::SearchBytes(object oBytes, unsigned long ulNumBytes)
         {
             if (base[i] == '\x2A')
                 continue;
-                
+
             if (bytes[i] != base[i])
                 break;
         }
-        
+
         if (i == iByteLen)
             return new CPointer((unsigned long) base);
-            
+
         base++;
     }
     return NULL;
@@ -108,10 +108,10 @@ void CPointer::Copy(object oDest, unsigned long ulNumBytes)
     unsigned long ulDest = ExtractPyPtr(oDest);
     if (!m_ulAddr || ulDest == 0)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
-        
+
     if (IsOverlapping(oDest, ulNumBytes))
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointers are overlapping!")
-        
+
     memcpy((void *) ulDest, (void *) m_ulAddr, ulNumBytes);
 }
 
@@ -120,7 +120,7 @@ void CPointer::Move(object oDest, unsigned long ulNumBytes)
     unsigned long ulDest = ExtractPyPtr(oDest);
     if (!m_ulAddr || ulDest == 0)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "At least one pointer is NULL.")
-        
+
     memmove((void *) ulDest, (void *) m_ulAddr, ulNumBytes);
 }
 
@@ -128,7 +128,7 @@ const char * CPointer::GetStringArray(int iOffset /* = 0 */)
 {
     if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
-        
+
     return (char *) (m_ulAddr + iOffset);
 }
 
@@ -136,7 +136,7 @@ void CPointer::SetStringArray(char* szText, int iOffset /* = 0 */, int iSize /* 
 {
     if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
-        
+
     if (!iSize)
     {
         iSize = UTIL_GetSize((void *) (m_ulAddr + iOffset));
@@ -204,6 +204,33 @@ CFunction* CPointer::MakeVirtualFunction(int iIndex, Convention_t eConv, char* s
     return GetVirtualFunc(iIndex)->MakeFunction(eConv, szParams, pConverter);
 }
 
+CPtrArray CPointer::MakePtrArray(unsigned int iTypeSize, int iLength /* = -1 */, PyObject* pConverter /* = NULL */)
+{
+    return CPtrArray(m_ulAddr, iTypeSize, iLength, pConverter);
+}
+
+
+// ============================================================================
+// CPtrArray class
+// ============================================================================
+CPtrArray::CPtrArray(unsigned long ulAddr, unsigned int iTypeSize, int iLength /* = -1 */, PyObject* pConverter /* = NULL */)
+: CArray<unsigned long>::CArray(ulAddr, iLength)
+{
+    m_iTypeSize = iTypeSize;
+    m_oConverter = pConverter ? object(handle<>(borrowed(pConverter))) : eval("lambda x: x");
+}
+
+object CPtrArray::GetItem(unsigned int iIndex)
+{
+    return m_oConverter(*this + (iIndex * m_iTypeSize));
+}
+
+void CPtrArray::SetItem(unsigned int iIndex, object oValue)
+{
+    unsigned long ulAddr = ExtractPyPtr(oValue);
+    memcpy((void *) (m_ulAddr + (iIndex * m_iTypeSize)), (void *) ulAddr, m_iTypeSize);
+}
+
 
 // ============================================================================
 // CFunction class
@@ -213,7 +240,7 @@ CFunction::CFunction(unsigned long ulAddr, Convention_t eConv, char* szParams, P
     m_ulAddr = ulAddr;
     m_eConv = eConv;
     m_oConverter = pConverter ? object(handle<>(borrowed(pConverter))) : eval("lambda x: x");
-    
+
     SetParams(szParams);
 }
 
@@ -350,6 +377,7 @@ const char* CFunction::GetParams()
 {
     return (const char *) m_szParams;
 }
+
 
 // ============================================================================
 // >> FUNCTIONS
