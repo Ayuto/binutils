@@ -177,7 +177,7 @@ class TypeManager(dict):
         Example for a file:
 
         # Optional -- required for type creation
-        type_size = 72
+        size = 72
 
         [attributes]
             [[<attribute name>]]
@@ -186,7 +186,9 @@ class TypeManager(dict):
             identifier = <offset>
 
             # Optional:
-            str_size      = <size of string array, default: 0>
+            size          = <size of string array, default: 0>
+            is_array      = <default: False>
+            length        = <length of array, default: -1>
             flags         = <attribute flags, default: READ_WRITE>
             documentation = <default: ''>
 
@@ -393,7 +395,7 @@ class TypeManager(dict):
                         size, length, self.create_converter(converter_name)
                     )
 
-                return getattr(ptr_self, 'make_%s_array'% str_type)(size)
+                return getattr(ptr_self, 'make_%s_array'% str_type)(length)
 
             # Handle normal attributes
             if aligned:
