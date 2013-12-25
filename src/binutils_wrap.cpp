@@ -29,6 +29,7 @@
 
 void ExposeScanner();
 void ExposeTools();
+void ExposeArrays();
 void ExposeDynCall();
 void ExposeDynamicHooks();
 
@@ -39,6 +40,7 @@ BOOST_PYTHON_MODULE(_binutils)
 {
     ExposeScanner();
     ExposeTools();
+    ExposeArrays();
     ExposeDynCall();
     ExposeDynamicHooks();
 }
@@ -147,6 +149,24 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ptr_overload, CPointer::SetPtr, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload, CPointer::Set<const char *>, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_array_overload, CPointer::SetStringArray, 1, 3)
 
+// make_<type>_array methods
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_bool_array_overload, CPointer::MakeArray<bool>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_char_array_overload, CPointer::MakeArray<char>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_uchar_array_overload, CPointer::MakeArray<unsigned char>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_short_array_overload, CPointer::MakeArray<short>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ushort_array_overload, CPointer::MakeArray<unsigned short>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_int_array_overload, CPointer::MakeArray<int>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_uint_array_overload, CPointer::MakeArray<unsigned int>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_long_array_overload, CPointer::MakeArray<long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ulong_array_overload, CPointer::MakeArray<unsigned long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_long_long_array_overload, CPointer::MakeArray<long long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ulong_long_array_overload, CPointer::MakeArray<unsigned long long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_float_array_overload, CPointer::MakeArray<float>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_double_array_overload, CPointer::MakeArray<double>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_string_array_overload, CPointer::MakeArray<const char *>, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ptr_array_overload, CPointer::MakePtrArray, 2, 3)
+
 void ExposeTools()
 {
     // CPointer class
@@ -171,51 +191,172 @@ void ExposeTools()
             &CPointer::Dealloc,
             "Deallocates a memory block."
         )
-        
+
         .def("make_function",
             &CPointer::MakeFunction,
             make_function_overload(
                 args("convention", "params", "return_type"),
                 "Creates a new Function object.")[manage_new_object_policy()]
         )
-        
+
         .def("make_virtual_function",
             &CPointer::MakeVirtualFunction,
             make_virtual_function_overload(
                 args("index", "convention", "params", "return_type"),
                 "Creates a new Function object.")[manage_new_object_policy()]
         )
-        
+
         .def("compare",
             &CPointer::Compare,
             "Compares the first <num> bytes of both pointers. Returns 0 if they are equal. A value greater than zero indicates that the first "\
             "byte that does not match in both pointers has a greater value in <self> than in <other>. A value less than zero indicates the opposite.",
             args("other", "num")
         )
-        
+
         .def("is_overlapping",
             &CPointer::IsOverlapping,
             "Returns True if the pointers are overlapping each other.",
             args("destination", "num_bytes")
         )
-        
+
         .def("search_bytes",
             &CPointer::SearchBytes,
             "Searches within the first <num_bytes> of this memory block for the first occurence of <bytes> and returns a pointer it.",
             args("bytes", "num_bytes"),
             manage_new_object_policy()
         )
-        
+
         .def("copy",
             &CPointer::Copy,
             "Copies <num_bytes> from <self> to the pointer <destination>. Overlapping is not allowed!",
             args("destination", "num_bytes")
         )
-        
+
         .def("move",
             &CPointer::Move,
             "Copies <num_bytes> from <self> to the pointer <destination>. Overlapping is allowed!",
             args("destination", "num_bytes")
+        )
+
+        // Make array methods
+        .def("make_bool_array",
+            &CPointer::MakeArray<bool>,
+            make_bool_array_overload(
+                args("length"),
+                "Creates a new BoolArray object."
+            )
+        )
+
+        .def("make_char_array",
+            &CPointer::MakeArray<char>,
+            make_char_array_overload(
+                args("length"),
+                "Creates a new CharArray object."
+            )
+        )
+
+        .def("make_uchar_array",
+            &CPointer::MakeArray<unsigned char>,
+            make_uchar_array_overload(
+                args("length"),
+                "Creates a new UCharArray object."
+            )
+        )
+
+        .def("make_short_array",
+            &CPointer::MakeArray<short>,
+            make_short_array_overload(
+                args("length"),
+                "Creates a new ShortArray object."
+            )
+        )
+
+        .def("make_ushort_array",
+            &CPointer::MakeArray<unsigned short>,
+            make_ushort_array_overload(
+                args("length"),
+                "Creates a new UShortArray object."
+            )
+        )
+
+        .def("make_int_array",
+            &CPointer::MakeArray<int>,
+            make_int_array_overload(
+                args("length"),
+                "Creates a new IntArray object."
+            )
+        )
+
+        .def("make_uint_array",
+            &CPointer::MakeArray<unsigned int>,
+            make_uint_array_overload(
+                args("length"),
+                "Creates a new UIntArray object."
+            )
+        )
+
+        .def("make_long_array",
+            &CPointer::MakeArray<long>,
+            make_long_array_overload(
+                args("length"),
+                "Creates a new LongArray object."
+            )
+        )
+
+        .def("make_ulong_array",
+            &CPointer::MakeArray<unsigned long>,
+            make_ulong_array_overload(
+                args("length"),
+                "Creates a new ULongArray object."
+            )
+        )
+
+        .def("make_long_long_array",
+            &CPointer::MakeArray<long long>,
+            make_long_long_array_overload(
+                args("length"),
+                "Creates a new LongLongArray object."
+            )
+        )
+
+        .def("make_ulong_long_array",
+            &CPointer::MakeArray<unsigned long long>,
+            make_ulong_long_array_overload(
+                args("length"),
+                "Creates a new ULongLongArray object."
+            )
+        )
+
+        .def("make_float_array",
+            &CPointer::MakeArray<float>,
+            make_float_array_overload(
+                args("length"),
+                "Creates a new FloatArray object."
+            )
+        )
+
+        .def("make_double_array",
+            &CPointer::MakeArray<double>,
+            make_double_array_overload(
+                args("length"),
+                "Creates a new DoubleArray object."
+            )
+        )
+
+        .def("make_string_array",
+            &CPointer::MakeArray<const char *>,
+            make_string_array_overload(
+                args("length"),
+                "Creates a new StringArray object."
+            )
+        )
+
+        .def("make_ptr_array",
+            &CPointer::MakePtrArray,
+            make_ptr_array_overload(
+                args("size", "length", "converter"),
+                "Creates a new PtrArray object."
+            )
         )
 
         // get_<type> methods
@@ -449,29 +590,29 @@ void ExposeTools()
             &CPointer::GetAddress,
             "Returns the address of this memory block."
         )
-        
+
         .def(!self)
-        
+
         .def(self == other<unsigned long>())
         .def(self == self)
-        
+
         .def(self != other<unsigned long>())
         .def(self != self)
-        
+
         .def(self += int())
         .def(self += self)
-        
+
         .def(self + int())
         .def(self + self)
         .def(int() + self)
-        
+
         .def(self -= int())
         .def(self -= self)
-        
+
         .def(self - int())
         .def(self - self)
         .def(int() - self)
-        
+
         // Attributes
         .def_readwrite("address",
             &CPointer::m_ulAddr,
@@ -485,7 +626,7 @@ void ExposeTools()
         )
     ;
 
-    
+
     // CFunction class
     class_<CFunction, bases<CPointer> >("Function", init<unsigned long, Convention_t, char*, optional<PyObject*> >())
         .def(init<const CFunction&>())
@@ -520,19 +661,19 @@ void ExposeTools()
             &CFunction::RemovePostHook,
             "Removes a post-hook callback."
         )
-        
+
         // Attributes
         .add_property("parameters",
             &CFunction::GetParams,
             &CFunction::SetParams,
             "Returns the parameter string."
         )
-        
+
         .def_readwrite("convention",
             &CFunction::m_eConv,
             "Returns the calling convention."
         )
-        
+
         .def_readwrite("converter",
             &CFunction::m_oConverter,
             "Returns the converter."
@@ -541,13 +682,46 @@ void ExposeTools()
 
     DEFINE_CLASS_METHOD_VARIADIC(Function, __call__);
     DEFINE_CLASS_METHOD_VARIADIC(Function, call_trampoline);
-    
+
     def("alloc",
         Alloc,
         args("size"),
         "Allocates a memory block.",
         manage_new_object_policy()
     );
+}
+
+
+// ============================================================================
+// >> Expose Arrays
+// ============================================================================
+#define EXPOSE_ARRAY(type, classname) \
+    class_< CArray<type>, bases<CPointer> >(classname, init<unsigned long, optional<int> >()) \
+        .def("__getitem__", &CArray<type>::GetItem) \
+        .def("__setitem__", &CArray<type>::SetItem) \
+    ;
+
+void ExposeArrays()
+{
+    EXPOSE_ARRAY(bool, "BoolArray");
+    EXPOSE_ARRAY(char, "CharArray");
+    EXPOSE_ARRAY(unsigned char, "UCharArray");
+    EXPOSE_ARRAY(short, "ShortArray");
+    EXPOSE_ARRAY(unsigned short, "UShortArray");
+    EXPOSE_ARRAY(int, "IntArray");
+    EXPOSE_ARRAY(unsigned int, "UIntArray");
+    EXPOSE_ARRAY(long, "LongArray");
+    EXPOSE_ARRAY(unsigned long, "ULongArray");
+    EXPOSE_ARRAY(long long, "LongLongArray");
+    EXPOSE_ARRAY(unsigned long long, "ULongLongArray");
+    EXPOSE_ARRAY(float, "FloatArray");
+    EXPOSE_ARRAY(double, "DoubleArray");
+    EXPOSE_ARRAY(const char *, "StringArray");
+
+    class_< CPtrArray, bases<CArray<unsigned long> > >("PtrArray", init<unsigned long, unsigned int, optional<int, PyObject *> >())
+        .def("__getitem__", &CPtrArray::GetItem)
+        .def("__setitem__", &CPtrArray::SetItem)
+    ;
 }
 
 // ============================================================================

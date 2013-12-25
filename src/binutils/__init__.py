@@ -21,8 +21,9 @@ KEY_CONVENTION        = 'convention'
 KEY_PARAMETERS        = 'parameters'
 KEY_SRV_CHECK         = 'srv_check'
 KEY_CONVERTER         = 'converter'
-KEY_STR_SIZE          = 'str_size'
-KEY_TYPE_SIZE         = 'type_size'
+KEY_SIZE              = 'size'
+KEY_LENGTH            = 'length'
+KEY_IS_ARRAY          = 'is_array'
 KEY_ATTR_FLAGS        = 'flags'
 KEY_DOCUMENTATION     = 'documentation'
 KEY_ALIGNED           = 'aligned'
@@ -219,7 +220,7 @@ class TypeManager(dict):
 
         cls_dict = {}
         raw_data = read_files(*files)
-        size     = raw_data.get(KEY_TYPE_SIZE)
+        size     = raw_data.get(KEY_SIZE)
 
         # Parse the attributes
         attributes = parse_data(
@@ -227,7 +228,9 @@ class TypeManager(dict):
             (
                 (KEY_CONVERTER, str, None),
                 (KEY_IDENTIFIER, int, None),
-                (KEY_STR_SIZE, int, 0),
+                (KEY_SIZE, int, 0),
+                (KEY_IS_ARRAY, as_bool, 'False'),
+                (KEY_LENGTH, int, -1),
                 (KEY_ATTR_FLAGS, lambda x: getattr(AttrFlags, x), 'READ_WRITE'),
                 (KEY_ALIGNED, as_bool, 'False'),
                 (KEY_DOCUMENTATION, str, '')
@@ -346,27 +349,53 @@ class TypeManager(dict):
         return make_function(binary, identifier, parameters, convention,
             srv_check, self.create_converter(converter_name), doc)
 
-    def attribute(self, str_type, offset=0, str_size=0,
-            flags=AttrFlags.READ_WRITE, aligned=False, doc=None):
+    def attribute(self, str_type, offset=0, size=0, is_array=False,
+            length=-1, flags=AttrFlags.READ_WRITE, aligned=False,
+            doc=None):
         '''
         Adds an attribute to a class.
         '''
 
         # We don't want the user to pass redundant information
-        if str_type != 'string_array' and str_size != 0:
-            raise ValueError('Parameter "str_size" is only required for att' \
-                'ributes of type "string_array".')
+        if length != -1 and not is_array:
+            raise ValueError('A length is optional for arrays.')
+
+        if str_type != 'string_array' and not is_array and size != 0:
+            raise ValueError('Parameter "size" is only required for att' \
+                'ributes of type "string_array" or arrays.')
 
         converter_name = None
         if str_type not in NATIVE_TYPES:
             converter_name = str_type
             str_type = 'ptr'
-        elif aligned:
+
+            if is_array and size == 0:
+                raise ValueError('Custom type arrays require a size.')
+
+        elif aligned and not is_array:
             raise ValueError('You cannot align an attribute of type "%s".'% \
                 str_type)
 
         # Getter method
         def fget(ptr_self):
+            # Handle arrays
+            if is_array:
+                # This is a check for NULL pointers and required for unaligned
+                # arrays
+                ptr_self2 = ptr_self.get_ptr(offset)
+                if aligned:
+                    ptr_self = Pointer(int(ptr_self) + offset)
+                else:
+                    ptr_self = ptr_self2
+
+                if str_type == 'ptr':
+                    return ptr_self.make_ptr_array(
+                        size, length, self.create_converter(converter_name)
+                    )
+
+                return getattr(ptr_self, 'make_%s_array'% str_type)(size)
+
+            # Handle normal attributes
             if aligned:
                 return self[converter_name](ptr_self + offset)
 
@@ -384,11 +413,10 @@ class TypeManager(dict):
                 raise NotImplementedError('Setting aligned types is current' \
                     'ly not supported.')
 
-            func = getattr(ptr_self, 'set_' + str_type)
             if str_type == 'string_array':
-                func(value, offset, str_size)
+                ptr_self.set_string_array(value, offset, size)
             else:
-                func(value, offset)
+                getattr(ptr_self, 'set_' + str_type)(value, offset)
 
         # Return the proper property object depending on the flags
         if flags & AttrFlags.READ_WRITE:

@@ -85,6 +85,9 @@ COMPILER_FLAGS = [
 
     # Disable "deprecated conversion from string..." warning
     '-Wno-write-strings',
+    
+    # Disable sign compare warnings
+    '-Wno-sign-compare',
 ]
 
 

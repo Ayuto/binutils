@@ -64,40 +64,46 @@ inline int GetDynCallConvention(Convention_t eConv)
 // ============================================================================
 // >> CLASSES
 // ============================================================================
+// Forward declarations
 class CFunction;
+
+template<class T>
+class CArray;
+
+class CPtrArray;
 
 // CPointer class
 class CPointer
 {
 public:
     CPointer(unsigned long ulAddr = 0);
-    
+
     operator unsigned long() const { return m_ulAddr; }
-    
+
     // Implement some operators
     template<class T>
     const CPointer operator+(T const& rhs)
     { return CPointer(m_ulAddr + rhs); }
-    
+
     template<class T>
     const CPointer operator-(T const& rhs)
     { return CPointer(m_ulAddr - rhs); }
-    
+
     template<class T>
     const CPointer operator+=(T const& rhs)
     { m_ulAddr += rhs; return *this; }
-    
+
     template<class T>
     const CPointer operator-=(T const& rhs)
     { m_ulAddr -= rhs; return *this; }
-    
+
     bool operator!()
     { return !m_ulAddr; }
-    
+
     template<class T>
     bool operator==(T const& rhs)
     { return m_ulAddr == rhs; }
-    
+
     template<class T>
     bool operator!=(T const& rhs)
     { return m_ulAddr != rhs; }
@@ -123,7 +129,7 @@ public:
 
     const char *        GetStringArray(int iOffset = 0);
     void                SetStringArray(char* szText, int iOffset = 0, int iSize = 0);
-    
+
     CPointer*           GetPtr(int iOffset = 0);
     void                SetPtr(object oPtr, int iOffset = 0);
 
@@ -144,6 +150,10 @@ public:
 
     CFunction*          MakeFunction(Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
     CFunction*          MakeVirtualFunction(int iIndex, Convention_t eConv, char* szParams, PyObject* pConverter = NULL);
+
+    template<class T>
+    CArray<T>           MakeArray(int iLength = -1)  { return CArray<T>(m_ulAddr, iLength); }
+    CPtrArray           MakePtrArray(unsigned int iTypeSize, int iLength = -1, PyObject* pConverter = NULL);
 
 public:
     unsigned long m_ulAddr;
@@ -167,7 +177,7 @@ public:
 
     void RemovePreHook(PyObject* pCallable);
     void RemovePostHook(PyObject* pCallable);
-    
+
     void SetParams(char* szPrams);
     const char* GetParams();
 
@@ -178,6 +188,54 @@ public:
 };
 
 
+// CArray class
+template<class T>
+class CArray: public CPointer
+{
+public:
+    CArray(unsigned long ulAddr, int iLength = -1)
+    {
+        m_ulAddr = ulAddr;
+        m_iLength = iLength;
+        m_iTypeSize = sizeof(T);
+    }
+
+    T GetItem(unsigned int iIndex)
+    {
+        if (iIndex >= m_iLength && m_iLength != -1)
+            BOOST_RAISE_EXCEPTION(PyExc_IndexError, "Index out of range.")
+
+        return Get<T>(iIndex * m_iTypeSize);
+    }
+
+    void SetItem(unsigned int iIndex, T value)
+    {
+        if (iIndex >= m_iLength & m_iLength != -1)
+            BOOST_RAISE_EXCEPTION(PyExc_IndexError, "Index out of range.")
+
+        Set<T>(value, iIndex * m_iTypeSize);
+    }
+
+public:
+    int          m_iLength;
+    unsigned int m_iTypeSize;
+};
+
+
+// CPtrArray class
+class CPtrArray: public CArray<unsigned long>
+{
+public:
+    CPtrArray(unsigned long ulAddr, unsigned int iTypeSize, int iLength = -1, PyObject* pConverter = NULL);
+
+    object GetItem(unsigned int iIndex);
+    void   SetItem(unsigned int iIndex, object oValue);
+
+public:
+    object m_oConverter;
+};
+
+
 // ============================================================================
 // >> FUNCTIONS
 // ============================================================================
@@ -185,19 +243,19 @@ int GetError();
 
 inline unsigned long ExtractPyPtr(object obj)
 {
-    // Try to get a CPointer representation at first
+    // Try to get an unsigned long at first
     try
     {
-        CPointer* pPtr = extract<CPointer *>(obj);
-        return pPtr->GetAddress();
+        return extract<unsigned long>(obj);
     }
     catch(...)
     {
         PyErr_Clear();
     }
 
-    // If that fails, try to extract an unsigned long
-    return extract<unsigned long>(obj);
+    // If that fails, try to extract a CPointer representation
+    CPointer* pPtr = extract<CPointer *>(obj);
+    return pPtr->GetAddress();
 }
 
 inline CPointer* Alloc(unsigned long ulSize)
