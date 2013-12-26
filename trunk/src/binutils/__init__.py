@@ -63,6 +63,42 @@ class AttrFlags:
 # =============================================================================
 # >> CLASSES
 # =============================================================================
+class CustomType(Pointer):
+    '''
+    Subclass this type in order to create custom types. You have to set the
+    attribute "__metaclass__" to an instance of TypeManager. This is required,
+    because that registers the class automatically at the manager instance.
+    '''
+
+    # TODO: Add operations like +, -, etc...
+
+    def __init__(self, ptr=None):
+        '''
+        If <ptr> not None the pointer will be wrapped by this class. Otherwise
+        it allocates space and wraps the allocated space. This requires the
+        <size> attribute to be set. If it still None, a ValueError will be
+        raised.
+        '''
+
+        if not hasattr(self, '__metaclass__') or \
+                not isinstance(self.__metaclass__, TypeManager):
+
+            raise ValueError('Attribute __metaclass__ must be an instance o' \
+                'f "TypeManager".')
+
+        if ptr is not None:
+            return super(CustomType, self).__init__(ptr)
+
+        if self.size is not None:
+            return super(CustomType, self).__init__(alloc(self.size))
+
+        raise ValueError('Cannot allocate space for type "%s". Missing size' \
+            ' information.'% self.__class__.__name__)
+
+    # Overload Pointer's size property
+    size = None
+
+
 class TypeManager(dict):
     '''
     The TypeManager is an extremely powerful class, which gives you the
@@ -85,6 +121,19 @@ class TypeManager(dict):
         '''
 
         return self[attr]
+
+    def __call__(self, name, bases, cls_dict):
+        '''
+        Creates a new class and registers it automatically. The type has to be
+        a subclass of CustomType.
+        '''
+
+        cls = self[name] = type(name, bases, cls_dict)
+        if not issubclass(cls, CustomType):
+            raise ValueError('Custom types have to be a subclass of "Custom' \
+                'Type".')
+
+        return cls
 
     def set_default_converter(self, converter):
         '''
@@ -152,17 +201,12 @@ class TypeManager(dict):
 
         return self.create_pipe(cls_dict)
 
-    def create_type(self, name, cls_dict, size=None, override=False):
+    def create_type(self, name, cls_dict):
         '''
-        Creates a new type. If the type already exists, an error will be
-        raised unless <override> was set to True.
+        Creates a new type.
         '''
 
-        return self.add_type(
-            type(name, (Pointer,), cls_dict),
-            size,
-            override
-        )
+        return self(name, (CustomType,), cls_dict)
 
     def create_type_from_file(self, type_name, *files):
         '''
@@ -220,9 +264,12 @@ class TypeManager(dict):
         All sections (attributes, functions, virtual_functions) are optional.
         '''
 
-        cls_dict = {}
         raw_data = read_files(*files)
         size     = raw_data.get(KEY_SIZE)
+        cls_dict = {
+            'size':  size and int(size),
+            '__metaclass__': self
+        }
 
         # Parse the attributes
         attributes = parse_data(
@@ -230,9 +277,8 @@ class TypeManager(dict):
             (
                 (KEY_CONVERTER, str, None),
                 (KEY_IDENTIFIER, int, None),
-                (KEY_SIZE, int, 0),
-                (KEY_IS_ARRAY, as_bool, 'False'),
                 (KEY_LENGTH, int, -1),
+                (KEY_IS_ARRAY, as_bool, 'False'),
                 (KEY_ATTR_FLAGS, lambda x: getattr(AttrFlags, x), 'READ_WRITE'),
                 (KEY_ALIGNED, as_bool, 'False'),
                 (KEY_DOCUMENTATION, str, '')
@@ -275,66 +321,15 @@ class TypeManager(dict):
             cls_dict[name] = self.virtual_function(*data)
 
         # Create the type and return it
-        return self.create_type(type_name, cls_dict, size and int(size))
-
-    def add_type(self, cls, size=None, override=False):
-        '''
-        Adds the given type to the manager. Raises an error of the type
-        already exists unless <override> was set to True.
-
-        The type has to be a sub-class of Pointer.
-
-        Be careful when you implement an __init__ function. It requires the
-        the following signature:
-        __init__(self, ptr)
-
-        This function overrides your function with an __init__ function that
-        will eventually allocate space (if <ptr> is None and <size> was
-        given).
-        '''
-
-        name = cls.__name__
-        if not override and name in self:
-            raise NameError('Cannot create type. "%s" already exists.'% name)
-
-        if not issubclass(cls, Pointer):
-            raise ValueError('Given class is not a subclass of Pointer.')
-
-        # Save the old __init__
-        old_init = cls.__init__ if '__init__' in cls.__dict__ else \
-            lambda self, ptr: None
-
-        def __init__(ptr_self, ptr=None):
-            # Call the old __init__ function
-            old_init(ptr_self, ptr)
-
-            # Do we want to wrap a pointer?
-            if ptr is not None:
-                super(cls, ptr_self).__init__(ptr)
-                return
-
-            # Do we have the size information?
-            if size is not None:
-                super(cls, ptr_self).__init__(alloc(size))
-                return
-
-            raise ValueError('Cannot allocate space for type "%s". Missing ' \
-                'size information.'% cls.__name__)
-
-        cls.__init__ = __init__
-        self[name] = cls
-        return cls
+        return self.create_type(type_name, cls_dict)
 
     def create_function_typedef(self, name, convention, parameters,
-            converter_name=None, override=False):
+            converter_name=None):
         '''
         Creates a function typedef. That means you can use the returned
         converter to wrap a pointer of a function without setting the function
         data again.
         '''
-
-        if not override and name in self:
-            raise NameError('Cannot create type. "%s" already exists.'% name)
 
         cls = self[name] = lambda ptr: ptr.make_function(convention,
             parameters, self.create_converter(converter_name))
@@ -351,28 +346,20 @@ class TypeManager(dict):
         return make_function(binary, identifier, parameters, convention,
             srv_check, self.create_converter(converter_name), doc)
 
-    def attribute(self, str_type, offset=0, size=0, is_array=False,
-            length=-1, flags=AttrFlags.READ_WRITE, aligned=False,
-            doc=None):
+    def attribute(self, str_type, offset=0, length=-1, is_array=False,
+            flags=AttrFlags.READ_WRITE, aligned=False, doc=None):
         '''
         Adds an attribute to a class.
         '''
 
         # We don't want the user to pass redundant information
-        if length != -1 and not is_array:
+        if length != -1 and (not is_array and str_type != 'string_array'):
             raise ValueError('A length is optional for arrays.')
-
-        if str_type != 'string_array' and not is_array and size != 0:
-            raise ValueError('Parameter "size" is only required for att' \
-                'ributes of type "string_array" or arrays.')
 
         converter_name = None
         if str_type not in NATIVE_TYPES:
             converter_name = str_type
             str_type = 'ptr'
-
-            if is_array and size == 0:
-                raise ValueError('Custom type arrays require a size.')
 
         elif aligned and not is_array:
             raise ValueError('You cannot align an attribute of type "%s".'% \
@@ -392,7 +379,9 @@ class TypeManager(dict):
 
                 if str_type == 'ptr':
                     return ptr_self.make_ptr_array(
-                        size, length, self.create_converter(converter_name)
+                        self[converter_name].size,
+                        length,
+                        self.create_converter(converter_name)
                     )
 
                 return getattr(ptr_self, 'make_%s_array'% str_type)(length)
@@ -416,7 +405,7 @@ class TypeManager(dict):
                     'ly not supported.')
 
             if str_type == 'string_array':
-                ptr_self.set_string_array(value, offset, size)
+                ptr_self.set_string_array(value, offset, length)
             else:
                 getattr(ptr_self, 'set_' + str_type)(value, offset)
 

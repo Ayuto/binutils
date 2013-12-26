@@ -128,7 +128,7 @@ public:
     }
 
     const char *        GetStringArray(int iOffset = 0);
-    void                SetStringArray(char* szText, int iOffset = 0, int iSize = 0);
+    void                SetStringArray(char* szText, int iOffset = 0, int iSize = -1);
 
     CPointer*           GetPtr(int iOffset = 0);
     void                SetPtr(object oPtr, int iOffset = 0);

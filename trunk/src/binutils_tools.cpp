@@ -132,12 +132,12 @@ const char * CPointer::GetStringArray(int iOffset /* = 0 */)
     return (char *) (m_ulAddr + iOffset);
 }
 
-void CPointer::SetStringArray(char* szText, int iOffset /* = 0 */, int iSize /* = 0 */)
+void CPointer::SetStringArray(char* szText, int iOffset /* = 0 */, int iSize /* = -1 */)
 {
     if (!m_ulAddr)
         BOOST_RAISE_EXCEPTION(PyExc_ValueError, "Pointer is NULL.")
 
-    if (!iSize)
+    if (iSize == -1)
     {
         iSize = UTIL_GetSize((void *) (m_ulAddr + iOffset));
         if(!iSize)

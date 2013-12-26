@@ -114,58 +114,57 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_function_overload, CPointer::MakeFun
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_virtual_function_overload, CPointer::MakeVirtualFunction, 3, 4)
 
 // get_<type> methods
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_bool_overload, CPointer::Get<bool>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_char_overload, CPointer::Get<char>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_uchar_overload, CPointer::Get<unsigned char>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_short_overload, CPointer::Get<short>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ushort_overload, CPointer::Get<unsigned short>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_int_overload, CPointer::Get<int>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_uint_overload, CPointer::Get<unsigned int>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_long_overload, CPointer::Get<long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ulong_overload, CPointer::Get<unsigned long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_long_long_overload, CPointer::Get<long long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ulong_long_overload, CPointer::Get<unsigned long long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_float_overload, CPointer::Get<float>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_double_overload, CPointer::Get<double>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ptr_overload, CPointer::GetPtr, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_string_overload, CPointer::Get<const char *>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_bool_overload,         CPointer::Get<bool>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_char_overload,         CPointer::Get<char>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_uchar_overload,        CPointer::Get<unsigned char>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_short_overload,        CPointer::Get<short>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ushort_overload,       CPointer::Get<unsigned short>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_int_overload,          CPointer::Get<int>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_uint_overload,         CPointer::Get<unsigned int>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_long_overload,         CPointer::Get<long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ulong_overload,        CPointer::Get<unsigned long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_long_long_overload,    CPointer::Get<long long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ulong_long_overload,   CPointer::Get<unsigned long long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_float_overload,        CPointer::Get<float>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_double_overload,       CPointer::Get<double>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_ptr_overload,          CPointer::GetPtr, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_string_overload,       CPointer::Get<const char *>, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_string_array_overload, CPointer::GetStringArray, 0, 1)
 
 // set_<type> methods
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_bool_overload, CPointer::Set<bool>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_char_overload, CPointer::Set<char>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_uchar_overload, CPointer::Set<unsigned char>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_short_overload, CPointer::Set<short>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ushort_overload, CPointer::Set<unsigned short>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_int_overload, CPointer::Set<int>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_uint_overload, CPointer::Set<unsigned int>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_long_overload, CPointer::Set<long>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ulong_overload, CPointer::Set<unsigned long>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_long_long_overload, CPointer::Set<long long>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ulong_long_overload, CPointer::Set<unsigned long long>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_float_overload, CPointer::Set<float>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_double_overload, CPointer::Set<double>, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ptr_overload, CPointer::SetPtr, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload, CPointer::Set<const char *>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_bool_overload,         CPointer::Set<bool>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_char_overload,         CPointer::Set<char>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_uchar_overload,        CPointer::Set<unsigned char>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_short_overload,        CPointer::Set<short>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ushort_overload,       CPointer::Set<unsigned short>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_int_overload,          CPointer::Set<int>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_uint_overload,         CPointer::Set<unsigned int>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_long_overload,         CPointer::Set<long>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ulong_overload,        CPointer::Set<unsigned long>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_long_long_overload,    CPointer::Set<long long>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ulong_long_overload,   CPointer::Set<unsigned long long>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_float_overload,        CPointer::Set<float>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_double_overload,       CPointer::Set<double>, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_ptr_overload,          CPointer::SetPtr, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_overload,       CPointer::Set<const char *>, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(set_string_array_overload, CPointer::SetStringArray, 1, 3)
 
 // make_<type>_array methods
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_bool_array_overload, CPointer::MakeArray<bool>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_char_array_overload, CPointer::MakeArray<char>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_uchar_array_overload, CPointer::MakeArray<unsigned char>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_short_array_overload, CPointer::MakeArray<short>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ushort_array_overload, CPointer::MakeArray<unsigned short>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_int_array_overload, CPointer::MakeArray<int>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_uint_array_overload, CPointer::MakeArray<unsigned int>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_long_array_overload, CPointer::MakeArray<long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ulong_array_overload, CPointer::MakeArray<unsigned long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_long_long_array_overload, CPointer::MakeArray<long long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_bool_array_overload,       CPointer::MakeArray<bool>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_char_array_overload,       CPointer::MakeArray<char>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_uchar_array_overload,      CPointer::MakeArray<unsigned char>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_short_array_overload,      CPointer::MakeArray<short>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ushort_array_overload,     CPointer::MakeArray<unsigned short>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_int_array_overload,        CPointer::MakeArray<int>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_uint_array_overload,       CPointer::MakeArray<unsigned int>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_long_array_overload,       CPointer::MakeArray<long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ulong_array_overload,      CPointer::MakeArray<unsigned long>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_long_long_array_overload,  CPointer::MakeArray<long long>, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ulong_long_array_overload, CPointer::MakeArray<unsigned long long>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_float_array_overload, CPointer::MakeArray<float>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_double_array_overload, CPointer::MakeArray<double>, 0, 1)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_string_array_overload, CPointer::MakeArray<const char *>, 0, 1)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ptr_array_overload, CPointer::MakePtrArray, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_float_array_overload,      CPointer::MakeArray<float>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_double_array_overload,     CPointer::MakeArray<double>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_string_array_overload,     CPointer::MakeArray<const char *>, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(make_ptr_array_overload,        CPointer::MakePtrArray, 2, 3)
 
 void ExposeTools()
 {
@@ -175,6 +174,13 @@ void ExposeTools()
 
         // Class methods
         .def("get_virtual_func",
+            &CPointer::GetVirtualFunc,
+            "Returns the address (as a CPointer instance) of a virtual function at the given index.",
+            args("index"),
+            manage_new_object_policy()
+        )
+
+        .def("__getitem__",
             &CPointer::GetVirtualFunc,
             "Returns the address (as a CPointer instance) of a virtual function at the given index.",
             args("index"),
@@ -699,6 +705,8 @@ void ExposeTools()
     class_< CArray<type>, bases<CPointer> >(classname, init<unsigned long, optional<int> >()) \
         .def("__getitem__", &CArray<type>::GetItem) \
         .def("__setitem__", &CArray<type>::SetItem) \
+        .def_readwrite("length", &CArray<type>::m_iLength) \
+        .def_readwrite("size", &CArray<type>::m_iTypeSize) \
     ;
 
 void ExposeArrays()
@@ -721,6 +729,7 @@ void ExposeArrays()
     class_< CPtrArray, bases<CArray<unsigned long> > >("PtrArray", init<unsigned long, unsigned int, optional<int, PyObject *> >())
         .def("__getitem__", &CPtrArray::GetItem)
         .def("__setitem__", &CPtrArray::SetItem)
+        .def_readwrite("converter", &CPtrArray::m_oConverter)
     ;
 }
 
