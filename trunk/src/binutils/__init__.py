@@ -289,8 +289,8 @@ class TypeManager(dict):
                 (KEY_IDENTIFIER, int, None),
                 (KEY_LENGTH, int, -1),
                 (KEY_IS_ARRAY, as_bool, 'False'),
-                (KEY_ATTR_FLAGS, lambda x: getattr(AttrFlags, x), 'READ_WRITE'),
                 (KEY_ALIGNED, as_bool, 'False'),
+                (KEY_ATTR_FLAGS, lambda x: getattr(AttrFlags, x), 'READ_WRITE'),
                 (KEY_DOCUMENTATION, str, '')
             )
         )
@@ -357,7 +357,7 @@ class TypeManager(dict):
             srv_check, self.create_converter(converter_name), doc)
 
     def attribute(self, str_type, offset=0, length=-1, is_array=False,
-            flags=AttrFlags.READ_WRITE, aligned=False, doc=None):
+            aligned=False, flags=AttrFlags.READ_WRITE, doc=None):
         '''
         Adds an attribute to a class.
         '''
@@ -414,9 +414,9 @@ class TypeManager(dict):
                 if isinstance(value, Pointer):
                     if length == -1:
                         if value.length == -1:
-                            raise ValueError('Setting arrays requires a len' +\
+                            raise ValueError('Setting arrays requires a len' \
                                 'gth.')
-                        
+
                         # If <length> is -1, but <value> has a length we are
                         # going to use its length instead
                         value = tuple(value)
@@ -432,7 +432,9 @@ class TypeManager(dict):
 
             # Handle aligned data types
             if aligned:
-                Pointer(value).copy(ptr_self + offset, self[converter_name].size * length)
+                Pointer(value).copy(
+                    ptr_self + offset, self[converter_name].size * length
+                )
                 return
 
             # Handle unaligned data types
