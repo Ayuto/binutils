@@ -70,8 +70,6 @@ class CustomType(Pointer):
     because that registers the class automatically at the manager instance.
     '''
 
-    # TODO: Add operations like +, -, etc...
-
     def __init__(self, ptr=None):
         '''
         If <ptr> not None the pointer will be wrapped by this class. Otherwise
@@ -94,6 +92,18 @@ class CustomType(Pointer):
 
         raise ValueError('Cannot allocate space for type "%s". Missing size' \
             ' information.'% self.__class__.__name__)
+
+    def __add__(self, other):
+        return self.__class__(int(self) + int(other))
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        return self.__class__(int(self) - int(other))
+
+    def __rsub__(self, other):
+        return self - other
 
     # Overload Pointer's size property
     size = None
@@ -128,11 +138,12 @@ class TypeManager(dict):
         a subclass of CustomType.
         '''
 
-        cls = self[name] = type(name, bases, cls_dict)
+        cls = type(name, bases, cls_dict)
         if not issubclass(cls, CustomType):
             raise ValueError('Custom types have to be a subclass of "Custom' \
                 'Type".')
 
+        self[name] = cls
         return cls
 
     def set_default_converter(self, converter):
