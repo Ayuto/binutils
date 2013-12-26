@@ -72,10 +72,10 @@ class CustomType(Pointer):
 
     def __init__(self, ptr=None):
         '''
-        If <ptr> not None the pointer will be wrapped by this class. Otherwise
-        it allocates space and wraps the allocated space. This requires the
-        <size> attribute to be set. If it still None, a ValueError will be
-        raised.
+        If <ptr> is not None the pointer will be wrapped by this class.
+        Otherwise it allocates space and wraps the allocated space. This
+        requires the <size> attribute to be set. If it is still None, a
+        ValueError will be raised.
         '''
 
         if not hasattr(self, '__metaclass__') or \
@@ -140,8 +140,8 @@ class TypeManager(dict):
 
         cls = type(name, bases, cls_dict)
         if not issubclass(cls, CustomType):
-            raise ValueError('Custom types have to be a subclass of "Custom' \
-                'Type".')
+            raise ValueError('Custom type "%s" has to be a subclass of "Cus' \
+                'tomType".'% name)
 
         self[name] = cls
         return cls
@@ -165,7 +165,7 @@ class TypeManager(dict):
 
         return lambda x: self[name](x)
 
-    def create_pipe(self, cls_dict):
+    def create_pipe(self, **cls_dict):
         '''
         This function is mostly used to create a pipe to global functions. But
         you can also create member functions as global functions (they will
@@ -193,7 +193,6 @@ class TypeManager(dict):
         documentation = <default: ''>
         '''
 
-        cls_dict = {}
         data = parse_data(
             read_files(*files),
             (
@@ -207,16 +206,19 @@ class TypeManager(dict):
             )
         )
 
+        cls_dict = {}
         for func_name, func_data in data:
             cls_dict[func_name] = self.pipe_function(*func_data)
 
-        return self.create_pipe(cls_dict)
+        return self.create_pipe(**cls_dict)
 
     def create_type(self, name, cls_dict):
         '''
-        Creates a new type.
+        Creates a new subclass of CustomType. Setting __metaclass__ is not
+        necessary and would have no effect as it will be overriden.
         '''
 
+        cls_dict['__metaclass__'] = self
         return self(name, (CustomType,), cls_dict)
 
     def create_type_from_file(self, type_name, *files):
@@ -277,10 +279,7 @@ class TypeManager(dict):
 
         raw_data = read_files(*files)
         size     = raw_data.get(KEY_SIZE)
-        cls_dict = {
-            'size':  size and int(size),
-            '__metaclass__': self
-        }
+        cls_dict = { 'size':  size and int(size)}
 
         # Parse the attributes
         attributes = parse_data(
@@ -462,7 +461,7 @@ type_manager = TypeManager()
 
 class _EvalFunction(Function):
     '''
-    This is a wrapper for the Thiscall constructor.
+    Emulates a bound method.
     '''
 
     def __init__(self, func):
@@ -471,39 +470,50 @@ class _EvalFunction(Function):
 
     def __get__(self, this, cls):
         '''
-        Returns a new Thiscall object.
+        Returns <self> if <this> is None. Otherwise it returns a new Thiscall
+        object.
         '''
 
-        func = Thiscall(self, this)
+        func = self if this is None else Thiscall(self, this, False)
         func.__doc__ = self.__doc__
         return func
 
 
 class _EvalVirtualFunction(object):
     '''
-    This is a wrapper for the Thiscall constructor. We can only evaluate the
-    virtual function when we get a valid this-pointer.
-
-    Step 1: Save the given information and wait for a this-pointer.
-    Step 2: Make a function and convert it to a Thiscall object.
+    Emulates a bound method. We can only evaluate the function's address if a
+    valid this-pointer was passed.
     '''
 
     def __init__(self, index, convention, parameters, converter):
-        '''
-        Step 1.
-        '''
-
         self.index      = index
         self.convention = convention
         self.parameters = parameters
         self.converter  = converter
         self.is_virtual = True
 
-    def __get__(self, this, cls):
+    def __call__(self, this, *args):
         '''
-        Step 2.
+        This will be called when the function was accessed via the class. We
+        still have to wait for a valid this-pointer.
         '''
 
+        return self.__eval_func(this)(*args)
+
+    def __get__(self, this, cls):
+        '''
+        Returns <self> if <this> is None. Otherwise it returns a new Thiscall
+        object.
+        '''
+
+        return self if this is None else self.__eval_func(this)
+
+    def __eval_func(self, this):
+        '''
+        Evaluates the function's address by using the given this-pointer.
+        '''
+
+        this = Pointer(this)
         func = Thiscall(
             this.make_virtual_function(
                 self.index,
@@ -511,8 +521,10 @@ class _EvalVirtualFunction(object):
                 self.parameters,
                 self.converter
             ),
-            this
+            this,
+            True
         )
+
         func.__doc__ = self.__doc__
         return func
 
@@ -537,13 +549,14 @@ class Thiscall(Function):
     function. This is done behind the scene.
     '''
 
-    def __init__(self, func, this):
+    def __init__(self, func, this, is_virtual):
         '''
         Initializes the function and saves the this-pointer.
         '''
 
         super(Thiscall, self).__init__(func)
         self.this = this
+        self.is_virtual = is_virtual
 
     def __call__(self, *args):
         '''
