@@ -67,7 +67,10 @@ int CPointer::Compare(object oOther, unsigned long ulNum)
 bool CPointer::IsOverlapping(object oOther, unsigned long ulNumBytes)
 {
     unsigned long ulOther = ExtractPyPtr(oOther);
-    return (m_ulAddr <= ulOther < m_ulAddr + ulNumBytes) || (ulOther <= m_ulAddr < ulOther + ulNumBytes);
+	if (m_ulAddr <= ulOther)
+		return m_ulAddr + ulNumBytes > ulOther;
+        
+	return ulOther + ulNumBytes > m_ulAddr;
 }
 
 CPointer* CPointer::SearchBytes(object oBytes, unsigned long ulNumBytes)

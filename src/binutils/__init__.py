@@ -396,10 +396,11 @@ class TypeManager(dict):
 
                 return getattr(ptr_self, 'make_%s_array'% str_type)(length)
 
-            # Handle normal attributes
+            # Handle aligned data types
             if aligned:
                 return self[converter_name](ptr_self + offset)
 
+            # Handle unaligned data types
             result = getattr(ptr_self, 'get_' + str_type)(offset)
             if str_type == 'ptr':
                 return self[converter_name](result)
@@ -408,12 +409,33 @@ class TypeManager(dict):
 
         # Setter method
         def fset(ptr_self, value):
-            if aligned:
-                # Using memcpy() is probably the best, but that would require
-                # a size, which we cannot know here.
-                raise NotImplementedError('Setting aligned types is current' \
-                    'ly not supported.')
+            # Handle arrays
+            if is_array:
+                if isinstance(value, Pointer):
+                    if length == -1:
+                        if value.length == -1:
+                            raise ValueError('Setting arrays requires a len' +\
+                                'gth.')
+                        
+                        # If <length> is -1, but <value> has a length we are
+                        # going to use its length instead
+                        value = tuple(value)
+                    else:
+                        value = (value[x] for x in xrange(length))
 
+                # Get the array and set all values
+                array = fget(ptr_self)
+                for index, val in enumerate(value):
+                    array[index] = val
+
+                return
+
+            # Handle aligned data types
+            if aligned:
+                Pointer(value).copy(ptr_self + offset, self[converter_name].size * length)
+                return
+
+            # Handle unaligned data types
             if str_type == 'string_array':
                 ptr_self.set_string_array(value, offset, length)
             else:
