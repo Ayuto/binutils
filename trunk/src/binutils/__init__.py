@@ -198,10 +198,10 @@ class TypeManager(dict):
             (
                 (KEY_BINARY, str, None),
                 (KEY_IDENTIFIER, str, None),
-                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'CDECL'),
                 (KEY_PARAMETERS, str, None),
-                (KEY_SRV_CHECK, as_bool, 'True'),
                 (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_SRV_CHECK, as_bool, 'True'),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'CDECL'),
                 (KEY_DOCUMENTATION, str, '')
             )
         )
@@ -305,9 +305,9 @@ class TypeManager(dict):
                 (KEY_BINARY, str, None),
                 (KEY_IDENTIFIER, str, None),
                 (KEY_PARAMETERS, str, None),
-                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
-                (KEY_SRV_CHECK, as_bool, 'True'),
                 (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_SRV_CHECK, as_bool, 'True'),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
                 (KEY_DOCUMENTATION, str, '')
             )
         )
@@ -321,8 +321,8 @@ class TypeManager(dict):
             (
                 (KEY_IDENTIFIER, int, None),
                 (KEY_PARAMETERS, str, None),
-                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
                 (KEY_CONVERTER, lambda x: None if x == 0 else x, 0),
+                (KEY_CONVENTION, lambda x: getattr(Convention, x), 'THISCALL'),
                 (KEY_DOCUMENTATION, str, '')
             )
         )
@@ -347,14 +347,14 @@ class TypeManager(dict):
         return cls
 
     def pipe_function(self, binary, identifier, parameters,
-            convention=Convention.CDECL, srv_check=True,
-            converter_name=None, doc=None):
+            converter_name=None, srv_check=True, convention=Convention.CDECL,
+            doc=None):
         '''
         Returns a new Function object.
         '''
 
-        return make_function(binary, identifier, parameters, convention,
-            srv_check, self.create_converter(converter_name), doc)
+        return make_function(binary, identifier, convention, parameters,
+            self.create_converter(converter_name), srv_check, doc)
 
     def attribute(self, str_type, offset=0, length=-1, is_array=False,
             aligned=False, flags=AttrFlags.READ_WRITE, doc=None):
@@ -454,21 +454,20 @@ class TypeManager(dict):
         # Raise an error as we cannot read or write the attribute
         raise AttributeError('Attribute is not readable or writeable.')
 
-    def function(self, binary, identifier, parameters,
-            convention=Convention.THISCALL, srv_check=True,
-            converter_name=None, doc=None):
+    def function(self, binary, identifier, parameters, converter_name=None,
+            srv_check=True, convention=Convention.THISCALL, doc=None):
         '''
         Adds a function to a class.
         '''
 
         func = _EvalFunction(make_function(binary, identifier, convention,
-            parameters, srv_check, self.create_converter(converter_name)))
+            parameters, self.create_converter(converter_name), srv_check))
 
         func.__doc__ = doc
         return func
 
     def virtual_function(self, index, parameters,
-            convention=Convention.THISCALL, converter_name=None, doc=None):
+            converter_name=None, convention=Convention.THISCALL, doc=None):
         '''
         Adds a virtual function to a class.
         '''
@@ -602,8 +601,8 @@ class Thiscall(Function):
 # =============================================================================
 # >> FUNCTIONS
 # =============================================================================
-def make_function(binary, identifier, convention, parameters, srv_check=True,
-        converter=lambda x: x, doc=None):
+def make_function(binary, identifier, convention, parameters,
+        converter=lambda x: x, srv_check=True, doc=None):
     '''
     Creates a new function. Signatures have to be passed with spaces.
     '''
