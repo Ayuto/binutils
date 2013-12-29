@@ -783,7 +783,7 @@ void ExposeDynamicHooks()
 #define EXPOSE_CALLBACK(type, name) \
     def(name, \
         CreateCallback<type>, \
-        args("py_callback"), \
+        args("py_callback", "pop_size"), \
         "Creates a new C++ callback", \
         manage_new_object_policy() \
     );

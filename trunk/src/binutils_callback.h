@@ -75,7 +75,7 @@ T CallCallback(CCallback* pCallback)
 }
 
 template<class T>
-CCallback* CreateCallback(object oCallback)
+CCallback* CreateCallback(object oCallback, int iPopSize = 0)
 {
     // Create a new callback object
     CCallback* pCallback = new CCallback(oCallback, NULL);
@@ -96,16 +96,12 @@ CCallback* CreateCallback(object oCallback)
     a.call((void *) &CallCallback<T>);
     a.add(esp, imm(4));
 
-    // Restore esp. This is required for STDCALL and THISCALL on Windows as
-    // the user might added bytes to the esp register (pop bytes)
-    a.mov(esp, dword_ptr_abs(&pCallback->m_ESP.m_ulAddr));
-
     // Prolog
     a.mov(esp, ebp);
     a.pop(ebp);
 
     // Return
-    a.ret();
+    a.ret(imm(iPopSize));
     
     // Set the function's address
     pCallback->m_ulAddr = (unsigned long) a.make();
