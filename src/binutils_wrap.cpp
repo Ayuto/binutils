@@ -24,6 +24,7 @@
 #include "binutils_scanner.h"
 #include "binutils_tools.h"
 #include "binutils_hooks.h"
+#include "binutils_callback.h"
 
 #include "dyncall.h"
 
@@ -32,6 +33,7 @@ void ExposeTools();
 void ExposeArrays();
 void ExposeDynCall();
 void ExposeDynamicHooks();
+void ExposeCallbacks();
 
 // ============================================================================
 // >> Expose the binutils module
@@ -43,6 +45,7 @@ BOOST_PYTHON_MODULE(_binutils)
     ExposeArrays();
     ExposeDynCall();
     ExposeDynamicHooks();
+    ExposeCallbacks();
 }
 
 // ============================================================================
@@ -772,4 +775,60 @@ void ExposeDynamicHooks()
             "Sets the argument at the specified index."
         )
     ;
+}
+
+// ============================================================================
+// >> Expose dynamic callback creation
+// ============================================================================
+#define EXPOSE_CALLBACK(type, name) \
+    def(name, \
+        CreateCallback<type>, \
+        args("py_callback"), \
+        "Creates a new C++ callback", \
+        manage_new_object_policy() \
+    );
+
+void ExposeCallbacks()
+{
+    class_< CCallback, bases<CPointer> >("Callback", no_init)
+        .def("free",
+            &CCallback::Free,
+            "Frees the callback. Don't use dealloc()!"
+        )
+        
+        .add_property("this_ptr",
+            &CCallback::GetThisPtr,
+            "Returns the this-pointer"
+        )
+        
+        .def_readwrite("callback",
+            &CCallback::m_oCallback,
+            "The Python function that gets called by the C++ callback"
+        )
+        
+        .def_readwrite("esp",
+            &CCallback::m_ESP,
+            "Stack pointer. You should never use it outside of the callback."
+        )
+        
+        .def_readwrite("ecx",
+            &CCallback::m_ECX,
+            "Counter register. You should never use it outside of the callback."
+        )
+    ;
+    
+    EXPOSE_CALLBACK(bool, "create_bool_callback");
+    EXPOSE_CALLBACK(char, "create_char_callback");
+    EXPOSE_CALLBACK(unsigned char, "create_uchar_callback");
+    EXPOSE_CALLBACK(short, "create_short_callback");
+    EXPOSE_CALLBACK(unsigned short, "create_ushort_callback");
+    EXPOSE_CALLBACK(int, "create_int_callback");
+    EXPOSE_CALLBACK(unsigned int, "create_uint_callback");
+    EXPOSE_CALLBACK(long, "create_long_callback");
+    EXPOSE_CALLBACK(unsigned long, "create_ulong_callback");
+    EXPOSE_CALLBACK(long long, "create_long_long_callback");
+    EXPOSE_CALLBACK(unsigned long long, "create_ulong_long_callback");
+    EXPOSE_CALLBACK(float, "create_float_callback");
+    EXPOSE_CALLBACK(double, "create_double_callback");
+    EXPOSE_CALLBACK(char *, "create_string_callback");
 }
