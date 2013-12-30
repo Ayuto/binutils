@@ -537,22 +537,22 @@ def create_string(text, size=None):
 
     return ptr
 
-def callback(str_type, pop_size=0):
+def callback(convention, params):
     '''
     This decorator is used to create C++ functions, which call back to the
     decorated Python function:
 
     EXAMPLE:
 
-    @binutils.callback('int')
-    def cpp_add(data):
-        return data.esp.get_int(8) + data.esp.get_int(12)
+    @binutils.callback(Convention.CDECL, 'ii)i')
+    def add(x, y):
+        return x + y
 
-    Don't forget to call cpp_add.free() when the function is not needed
+    Don't forget to call add.free() when the function is not needed
     anymore.
     '''
 
     def wait_for_py_func(py_func):
-        return globals()['create_' + str_type + '_callback'](py_func, pop_size)
+        return Callback(py_func, convention, params)
 
     return wait_for_py_func

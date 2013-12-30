@@ -780,46 +780,12 @@ void ExposeDynamicHooks()
 // ============================================================================
 // >> Expose dynamic callback creation
 // ============================================================================
-#define EXPOSE_CALLBACK(type, overload) \
-    def(#overload, \
-        &CreateCallback<type>, \
-        overload( \
-            args("py_callback", "pop_size"), \
-            "Creates a new C++ callback" \
-        )[manage_new_object_policy()] \
-    );
-
-#define OVERLOAD_CALLBACK(type, overload) \
-    BOOST_PYTHON_FUNCTION_OVERLOADS(overload, CreateCallback<type>, 1, 2);
-
-OVERLOAD_CALLBACK(void,               create_void_callback);
-OVERLOAD_CALLBACK(bool,               create_bool_callback);
-OVERLOAD_CALLBACK(char,               create_char_callback);
-OVERLOAD_CALLBACK(unsigned char,      create_uchar_callback);
-OVERLOAD_CALLBACK(short,              create_short_callback);
-OVERLOAD_CALLBACK(unsigned short,     create_ushort_callback);
-OVERLOAD_CALLBACK(int,                create_int_callback);
-OVERLOAD_CALLBACK(unsigned int,       create_uint_callback);
-OVERLOAD_CALLBACK(long,               create_long_callback);
-OVERLOAD_CALLBACK(unsigned long,      create_ulong_callback);
-OVERLOAD_CALLBACK(long long,          create_long_long_callback);
-OVERLOAD_CALLBACK(unsigned long long, create_ulong_long_callback);
-OVERLOAD_CALLBACK(float,              create_float_callback);
-OVERLOAD_CALLBACK(double,             create_double_callback);
-OVERLOAD_CALLBACK(char *,             create_string_callback);
-OVERLOAD_CALLBACK(void *,             create_ptr_callback);
-
 void ExposeCallbacks()
 {
-    class_< CCallback, bases<CPointer> >("Callback", no_init)
+    class_< CCallback, bases< CFunction > >("Callback", init< object, Convention_t, char * >())
         .def("free",
             &CCallback::Free,
             "Frees the callback. Don't use dealloc()!"
-        )
-
-        .add_property("this_ptr",
-            &CCallback::GetThisPtr,
-            "Returns the this-pointer"
         )
 
         .def_readwrite("callback",
@@ -831,27 +797,5 @@ void ExposeCallbacks()
             &CCallback::m_ESP,
             "Stack pointer. You should never use it outside of the callback."
         )
-
-        .def_readwrite("ecx",
-            &CCallback::m_ECX,
-            "Counter register. You should never use it outside of the callback."
-        )
     ;
-
-    EXPOSE_CALLBACK(void,               create_void_callback);
-    EXPOSE_CALLBACK(bool,               create_bool_callback);
-    EXPOSE_CALLBACK(char,               create_char_callback);
-    EXPOSE_CALLBACK(unsigned char,      create_uchar_callback);
-    EXPOSE_CALLBACK(short,              create_short_callback);
-    EXPOSE_CALLBACK(unsigned short,     create_ushort_callback);
-    EXPOSE_CALLBACK(int,                create_int_callback);
-    EXPOSE_CALLBACK(unsigned int,       create_uint_callback);
-    EXPOSE_CALLBACK(long,               create_long_callback);
-    EXPOSE_CALLBACK(unsigned long,      create_ulong_callback);
-    EXPOSE_CALLBACK(long long,          create_long_long_callback);
-    EXPOSE_CALLBACK(unsigned long long, create_ulong_long_callback);
-    EXPOSE_CALLBACK(float,              create_float_callback);
-    EXPOSE_CALLBACK(double,             create_double_callback);
-    EXPOSE_CALLBACK(char *,             create_string_callback);
-    EXPOSE_CALLBACK(void *,             create_ptr_callback);
 }

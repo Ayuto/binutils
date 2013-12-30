@@ -20,6 +20,7 @@ SOURCES = [
     'src/binutils_tools.cpp',
     'src/binutils_hooks.cpp',
     'src/binutils_scanner.cpp',
+    'src/binutils_callback.cpp',
 
     # DynamicHooks
     'src/thirdparty/DynamicHooks/DynamicHooks.cpp',
