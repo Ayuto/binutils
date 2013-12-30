@@ -70,19 +70,34 @@ public:
 template<class T>
 T CallCallback(CCallback* pCallback)
 {
-    return extract<T>(pCallback->m_oCallback(ptr(pCallback)));
+    BEGIN_BOOST_PY()
+        return extract<T>(pCallback->m_oCallback(ptr(pCallback)));
+    END_BOOST_PY_NORET()
+
+    // Throw an exception. We will crash now :(
+    throw;
 }
 
 template<>
 void CallCallback(CCallback* pCallback)
 {
-    pCallback->m_oCallback(ptr(pCallback));
+    BEGIN_BOOST_PY()
+        pCallback->m_oCallback(ptr(pCallback));
+    END_BOOST_PY_NORET()
+
+    // Throw an exception. We will crash now :(
+    throw;
 }
 
 template<>
 void* CallCallback(CCallback* pCallback)
 {
-    return (void *) ExtractPyPtr(pCallback->m_oCallback(ptr(pCallback)));
+    BEGIN_BOOST_PY()
+        return (void *) ExtractPyPtr(pCallback->m_oCallback(ptr(pCallback)));
+    END_BOOST_PY_NORET()
+
+    // Throw an exception. We will crash now :(
+    throw;
 }
 
 template<class T>
@@ -91,7 +106,6 @@ CCallback* CreateCallback(object oCallback, int iPopSize = 0)
     // Create a new callback object
     CCallback* pCallback = new CCallback(oCallback, NULL);
 
-    // Create the C++ callback;
     Assembler a;
 
     // Epilog
@@ -113,7 +127,7 @@ CCallback* CreateCallback(object oCallback, int iPopSize = 0)
 
     // Return
     a.ret(imm(iPopSize));
-    
+
     // Set the function's address
     pCallback->m_ulAddr = (unsigned long) a.make();
 
