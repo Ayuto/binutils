@@ -25,114 +25,67 @@
 // ============================================================================
 #include "binutils_tools.h"
 
-#include "AsmJit.h"
-using namespace AsmJit;
+
+// ============================================================================
+// >> FUNCTIONS
+// ============================================================================
+// Forward declarations
+class CCallback;
+
+object CallCallback(CCallback* pCallback);
+
+template<class T>
+T CallbackCaller(CCallback* pCallback)
+{
+    return extract<T>(CallCallback(pCallback));
+}
+
+template<>
+void CallbackCaller(CCallback* pCallback)
+{
+    CallCallback(pCallback);
+}
+
+template<>
+void* CallbackCaller(CCallback* pCallback)
+{
+    return (void *) ExtractPyPtr(CallCallback(pCallback));
+}
 
 
 // ============================================================================
 // >> CLASSES
 // ============================================================================
-class CCallback: public CPointer
+class CCallback: public CFunction
 {
 public:
-    CCallback(object oCallback, void* pFunc)
-    {
-        m_ulAddr    = (unsigned long) pFunc;
-        m_oCallback = oCallback;
-    }
+    CCallback(object oCallback, Convention_t eConv, char* szParams);
+    ~CCallback();
 
-    void Free()
-    {
-        // TODO: Figure out how to use std::free() on the generated code
-        MemoryManager::getGlobal()->free((void *) m_ulAddr);
-        m_ulAddr = 0;
-    }
+    int      GetPopSize();
+    int      GetArgumentCount();
+    Param_t* GetArgument(int iIndex);
+    void     Free();
 
-    CPointer GetThisPtr()
+    template<class T>
+    T GetArgument(int iIndex)
     {
-        #ifdef _WIN32
-            return m_ECX;
-        #endif
+    #ifdef _WIN32
+        if (m_eConv == CONV_THISCALL && iIndex == 0)
+            return *(T *) &m_ulECX;
+    #endif
 
-        return *m_ESP.GetPtr(8);
+        unsigned long reg = (m_ESP.m_ulAddr) + GetArgument(iIndex)->m_iOffset + 8;
+        return *(T *) reg;
     }
 
 public:
-    object   m_oCallback;
-    CPointer m_ESP;
-    CPointer m_ECX;
+    // For variadic functions
+    CPointer      m_ESP;
+    unsigned long m_ulECX;
+    object        m_oCallback;
+    Param_t*      m_pParams;
+    Param_t*      m_pRetParam;
 };
-
-
-// ============================================================================
-// >> FUNCTIONS
-// ============================================================================
-template<class T>
-T CallCallback(CCallback* pCallback)
-{
-    BEGIN_BOOST_PY()
-        return extract<T>(pCallback->m_oCallback(ptr(pCallback)));
-    END_BOOST_PY_NORET()
-
-    // Throw an exception. We will crash now :(
-    throw;
-}
-
-template<>
-void CallCallback(CCallback* pCallback)
-{
-    BEGIN_BOOST_PY()
-        pCallback->m_oCallback(ptr(pCallback));
-        return;
-    END_BOOST_PY_NORET()
-
-    // Throw an exception. We will crash now :(
-    throw;
-}
-
-template<>
-void* CallCallback(CCallback* pCallback)
-{
-    BEGIN_BOOST_PY()
-        return (void *) ExtractPyPtr(pCallback->m_oCallback(ptr(pCallback)));
-    END_BOOST_PY_NORET()
-
-    // Throw an exception. We will crash now :(
-    throw;
-}
-
-template<class T>
-CCallback* CreateCallback(object oCallback, int iPopSize = 0)
-{
-    // Create a new callback object
-    CCallback* pCallback = new CCallback(oCallback, NULL);
-
-    Assembler a;
-
-    // Epilog
-    a.push(ebp);
-    a.mov(ebp, esp);
-
-    // Save esp and ecx, so the Python callback can access the parameters
-    a.mov(dword_ptr_abs(&pCallback->m_ESP.m_ulAddr), esp);
-    a.mov(dword_ptr_abs(&pCallback->m_ECX.m_ulAddr), ecx);
-
-    // Call callback caller
-    a.push(imm((sysint_t) pCallback));
-    a.call((void *) &CallCallback<T>);
-    a.add(esp, imm(4));
-
-    // Prolog
-    a.mov(esp, ebp);
-    a.pop(ebp);
-
-    // Return
-    a.ret(imm(iPopSize));
-
-    // Set the function's address
-    pCallback->m_ulAddr = (unsigned long) a.make();
-
-    return pCallback;
-}
 
 #endif // _BINUTILS_CALLBACK_H
