@@ -536,3 +536,23 @@ def create_string(text, size=None):
         raise ValueError('String exceeds size of memory block.')
 
     return ptr
+
+def callback(str_type, pop_size=0):
+    '''
+    This decorator is used to create C++ functions, which call back to the
+    decorated Python function:
+
+    EXAMPLE:
+
+    @binutils.callback('int')
+    def cpp_add(data):
+        return data.esp.get_int(8) + data.esp.get_int(12)
+
+    Don't forget to call cpp_add.free() when the function is not needed
+    anymore.
+    '''
+
+    def wait_for_py_func(py_func):
+        return globals()['create_' + str_type + '_callback'](py_func)
+
+    return wait_for_py_func
