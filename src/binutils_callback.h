@@ -83,6 +83,7 @@ void CallCallback(CCallback* pCallback)
 {
     BEGIN_BOOST_PY()
         pCallback->m_oCallback(ptr(pCallback));
+        return;
     END_BOOST_PY_NORET()
 
     // Throw an exception. We will crash now :(
