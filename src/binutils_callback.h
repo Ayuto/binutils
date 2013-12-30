@@ -70,14 +70,19 @@ public:
 template<class T>
 T CallCallback(CCallback* pCallback)
 {
-    object retval = pCallback->m_oCallback(ptr(pCallback));
-    return extract<T>(retval);
+    return extract<T>(pCallback->m_oCallback(ptr(pCallback)));
 }
 
 template<>
 void CallCallback(CCallback* pCallback)
 {
     pCallback->m_oCallback(ptr(pCallback));
+}
+
+template<>
+void* CallCallback(CCallback* pCallback)
+{
+    return (void *) ExtractPyPtr(pCallback->m_oCallback(ptr(pCallback)));
 }
 
 template<class T>

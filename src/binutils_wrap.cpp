@@ -807,6 +807,7 @@ OVERLOAD_CALLBACK(unsigned long long, create_ulong_long_callback);
 OVERLOAD_CALLBACK(float, create_float_callback);
 OVERLOAD_CALLBACK(double, create_double_callback);
 OVERLOAD_CALLBACK(char *, create_string_callback);
+OVERLOAD_CALLBACK(void *, create_ptr_callback);
 
 void ExposeCallbacks()
 {
@@ -852,4 +853,5 @@ void ExposeCallbacks()
     EXPOSE_CALLBACK(float, create_float_callback);
     EXPOSE_CALLBACK(double, create_double_callback);
     EXPOSE_CALLBACK(char *, create_string_callback);
+    EXPOSE_CALLBACK(void *, create_ptr_callback);
 }
