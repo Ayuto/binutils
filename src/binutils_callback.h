@@ -41,13 +41,13 @@ T CallbackCaller(CCallback* pCallback)
 }
 
 template<>
-void CallbackCaller(CCallback* pCallback)
+inline void CallbackCaller(CCallback* pCallback)
 {
     CallCallback(pCallback);
 }
 
 template<>
-void* CallbackCaller(CCallback* pCallback)
+inline void* CallbackCaller(CCallback* pCallback)
 {
     return (void *) ExtractPyPtr(CallCallback(pCallback));
 }
