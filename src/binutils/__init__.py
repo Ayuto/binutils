@@ -553,6 +553,6 @@ def callback(str_type, pop_size=0):
     '''
 
     def wait_for_py_func(py_func):
-        return globals()['create_' + str_type + '_callback'](py_func)
+        return globals()['create_' + str_type + '_callback'](py_func, pop_size)
 
     return wait_for_py_func
