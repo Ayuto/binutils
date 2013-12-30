@@ -74,6 +74,12 @@ T CallCallback(CCallback* pCallback)
     return extract<T>(retval);
 }
 
+template<>
+void CallCallback(CCallback* pCallback)
+{
+    pCallback->m_oCallback(ptr(pCallback));
+}
+
 template<class T>
 CCallback* CreateCallback(object oCallback, int iPopSize = 0)
 {
