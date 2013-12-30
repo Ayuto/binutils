@@ -32,24 +32,24 @@
 // Forward declarations
 class CCallback;
 
-object CallCallback(CCallback* pCallback);
+object CallCallback(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX);
 
 template<class T>
-T CallbackCaller(CCallback* pCallback)
+T CallbackCaller(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
 {
-    return extract<T>(CallCallback(pCallback));
+    return extract<T>(CallCallback(pCallback, ulESP, ulECX));
 }
 
 template<>
-inline void CallbackCaller(CCallback* pCallback)
+inline void CallbackCaller(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
 {
-    CallCallback(pCallback);
+    CallCallback(pCallback, ulESP, ulECX);
 }
 
 template<>
-inline void* CallbackCaller(CCallback* pCallback)
+inline void* CallbackCaller(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
 {
-    return (void *) ExtractPyPtr(CallCallback(pCallback));
+    return (void *) ExtractPyPtr(CallCallback(pCallback, ulESP, ulECX));
 }
 
 
@@ -67,22 +67,8 @@ public:
     Param_t* GetArgument(int iIndex);
     void     Free();
 
-    template<class T>
-    T GetArgument(int iIndex)
-    {
-    #ifdef _WIN32
-        if (m_eConv == CONV_THISCALL && iIndex == 0)
-            return *(T *) &m_ulECX;
-    #endif
-
-        unsigned long reg = (m_ESP.m_ulAddr) + GetArgument(iIndex)->m_iOffset + 8;
-        return *(T *) reg;
-    }
-
 public:
     // For variadic functions
-    CPointer      m_ESP;
-    unsigned long m_ulECX;
     object        m_oCallback;
     Param_t*      m_pParams;
     Param_t*      m_pRetParam;

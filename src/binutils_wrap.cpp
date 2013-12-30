@@ -792,10 +792,5 @@ void ExposeCallbacks()
             &CCallback::m_oCallback,
             "The Python function that gets called by the C++ callback"
         )
-
-        .def_readwrite("esp",
-            &CCallback::m_ESP,
-            "Stack pointer. You should never use it outside of the callback."
-        )
     ;
 }
