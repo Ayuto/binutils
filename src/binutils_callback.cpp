@@ -144,17 +144,17 @@ void CCallback::Free()
 // >> FUNCTIONS
 // ============================================================================
 template<class T>
-T GetArgument(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX, int iIndex)
+T GetArgument(CCallback* pCallback, unsigned long ulEBP, unsigned long ulECX, int iIndex)
 {
 #ifdef _WIN32
     if (pCallback->m_eConv == CONV_THISCALL && iIndex == 0)
         return *(T *) &ulECX;
 #endif
 
-    return *(T *) (ulESP + pCallback->GetArgument(iIndex)->m_iOffset + 8);
+    return *(T *) (ulEBP + pCallback->GetArgument(iIndex)->m_iOffset + 8);
 }
 
-object CallCallback(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
+object CallCallback(CCallback* pCallback, unsigned long ulEBP, unsigned long ulECX)
 {
     BEGIN_BOOST_PY()
 
@@ -164,26 +164,26 @@ object CallCallback(CCallback* pCallback, unsigned long ulESP, unsigned long ulE
             object val;
             switch(pCallback->GetArgument(i)->m_cParam)
             {
-                case SIGCHAR_BOOL:      val = object(GetArgument<bool>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_CHAR:      val = object(GetArgument<char>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_UCHAR:     val = object(GetArgument<unsigned char>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_SHORT:     val = object(GetArgument<short>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_USHORT:    val = object(GetArgument<unsigned short>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_INT:       val = object(GetArgument<int>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_UINT:      val = object(GetArgument<unsigned int>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_LONG:      val = object(GetArgument<long>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_ULONG:     val = object(GetArgument<unsigned long>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_LONGLONG:  val = object(GetArgument<long long>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_ULONGLONG: val = object(GetArgument<unsigned long long>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_FLOAT:     val = object(GetArgument<float>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_DOUBLE:    val = object(GetArgument<double>(pCallback, ulESP, ulECX, i)); break;
-                case SIGCHAR_POINTER:   val = object(CPointer(GetArgument<unsigned long>(pCallback, ulESP, ulECX, i))); break;
-                case SIGCHAR_STRING:    val = object(GetArgument<const char*>(pCallback, ulESP, ulECX, i)); break;
+                case SIGCHAR_BOOL:      val = object(GetArgument<bool>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_CHAR:      val = object(GetArgument<char>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_UCHAR:     val = object(GetArgument<unsigned char>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_SHORT:     val = object(GetArgument<short>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_USHORT:    val = object(GetArgument<unsigned short>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_INT:       val = object(GetArgument<int>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_UINT:      val = object(GetArgument<unsigned int>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_LONG:      val = object(GetArgument<long>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_ULONG:     val = object(GetArgument<unsigned long>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_LONGLONG:  val = object(GetArgument<long long>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_ULONGLONG: val = object(GetArgument<unsigned long long>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_FLOAT:     val = object(GetArgument<float>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_DOUBLE:    val = object(GetArgument<double>(pCallback, ulEBP, ulECX, i)); break;
+                case SIGCHAR_POINTER:   val = object(CPointer(GetArgument<unsigned long>(pCallback, ulEBP, ulECX, i))); break;
+                case SIGCHAR_STRING:    val = object(GetArgument<const char*>(pCallback, ulEBP, ulECX, i)); break;
                 default: BOOST_RAISE_EXCEPTION(PyExc_TypeError, "Unknown type."); break;
             }
             arg_list.append(val);
         }
-        arg_list.append(CPointer((unsigned long) ulESP));
+        arg_list.append(CPointer((unsigned long) ulEBP));
         return eval("lambda func, args: func(*args)")(pCallback->m_oCallback, arg_list);
 
     END_BOOST_PY_NORET()

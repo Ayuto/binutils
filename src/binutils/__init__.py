@@ -545,7 +545,7 @@ def callback(convention, params):
     EXAMPLE:
 
     @binutils.callback(Convention.CDECL, 'ii)i')
-    def add(x, y):
+    def add(x, y, ebp):
         return x + y
 
     Don't forget to call add.free() when the function is not needed
