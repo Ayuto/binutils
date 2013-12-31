@@ -32,24 +32,24 @@
 // Forward declarations
 class CCallback;
 
-object CallCallback(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX);
+object CallCallback(CCallback* pCallback, unsigned long ulEBP, unsigned long ulECX);
 
 template<class T>
-T CallbackCaller(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
+T CallbackCaller(CCallback* pCallback, unsigned long ulEBP, unsigned long ulECX)
 {
-    return extract<T>(CallCallback(pCallback, ulESP, ulECX));
+    return extract<T>(CallCallback(pCallback, ulEBP, ulECX));
 }
 
 template<>
-inline void CallbackCaller(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
+inline void CallbackCaller(CCallback* pCallback, unsigned long ulEBP, unsigned long ulECX)
 {
-    CallCallback(pCallback, ulESP, ulECX);
+    CallCallback(pCallback, ulEBP, ulECX);
 }
 
 template<>
-inline void* CallbackCaller(CCallback* pCallback, unsigned long ulESP, unsigned long ulECX)
+inline void* CallbackCaller(CCallback* pCallback, unsigned long ulEBP, unsigned long ulECX)
 {
-    return (void *) ExtractPyPtr(CallCallback(pCallback, ulESP, ulECX));
+    return (void *) ExtractPyPtr(CallCallback(pCallback, ulEBP, ulECX));
 }
 
 
